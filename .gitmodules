@@ -1,0 +1,30 @@
+[submodule "plugins/applications"]
+	path = plugins/applications
+	url = https://github.com/anyrun-org/plugin-applications.git
+[submodule "plugins/dictionary"]
+	path = plugins/dictionary
+	url = https://github.com/anyrun-org/plugin-dictionary.git
+[submodule "plugins/kidex"]
+	path = plugins/kidex
+	url = https://github.com/anyrun-org/plugin-kidex.git
+[submodule "plugins/randr"]
+	path = plugins/randr
+	url = https://github.com/Kirottu/anyrun-plugin-randr.git
+[submodule "plugins/rink"]
+	path = plugins/rink
+	url = https://github.com/anyrun-org/plugin-rink.git
+[submodule "plugins/shell"]
+	path = plugins/shell
+	url = https://github.com/anyrun-org/plugin-shell.git
+[submodule "plugins/stdin"]
+	path = plugins/stdin
+	url = https://github.com/anyrun-org/plugin-stdin.git
+[submodule "plugins/symbols"]
+	path = plugins/symbols
+	url = https://github.com/anyrun-org/plugin-symbols.git
+[submodule "plugins/translate"]
+	path = plugins/translate
+	url = https://github.com/anyrun-org/plugin-translate.git
+[submodule "plugins/websearch"]
+	path = plugins/websearch
+	url = https://github.com/anyrun-org/plugin-websearch.git
