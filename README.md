@@ -2,6 +2,12 @@
 
 A wayland native krunner-like runner, made with customizability in mind.
 
+---
+
+*This repo was forked to have some more fresh dependencies and plugins, small and big fixes/refactors, etc*
+
+check out [fork comments](#fork-comments)
+
 # Features
 
 - Style customizability with GTK+ CSS
@@ -146,7 +152,7 @@ Make sure all of the dependencies are installed, and then run the following
 commands in order:
 
 ```sh
-git clone https://github.com/Kirottu/anyrun.git # Clone the repository
+git clone --recursive https://github.com/Kirottu/anyrun.git # Clone the repository
 cd anyrun # Change the active directory to it
 cargo build --release # Build all the packages
 cargo install --path anyrun/ # Install the anyrun binary
@@ -299,3 +305,25 @@ fn handler(selection: Match) -> HandleResult {
 
 And that's it! That's all of the API needed to make runners. Refer to the
 plugins in the [plugins](plugins) folder for more examples.
+
+# Fork comments
+
+## Currently made
+
+- plugins as git submodules
+- updated `wl-clipboard` to `0.8.1` to fix copy-paste issues
+- plugins
+  - applications
+    - replaced with [peppidesu's](https://github.com/peppidesu/plugin-applications.git) repo
+  - kidex
+    - added `prefix`
+  - randr
+    - updated to newer [hyprland crate](https://crates.io/crates/hyprland)
+      
+      it's currently unstable but it's working
+  - translate
+    - `tokio` with `rt-multi-thread` feature instead of `rt` because of `Runtime::new()`
+
+## TODO
+
+- [ ] Get rid of full screen window
