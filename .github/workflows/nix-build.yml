@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -52,6 +54,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: cachix/install-nix-action@v26
       - uses: DeterminateSystems/magic-nix-cache-action@main
