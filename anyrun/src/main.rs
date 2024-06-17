@@ -13,6 +13,7 @@ use abi_stable::std_types::{ROption, RVec};
 use anyrun_interface::{HandleResult, Match, PluginInfo, PluginRef, PollResult};
 use clap::{Parser, ValueEnum};
 use gtk::{gdk, gdk_pixbuf, gio, glib, prelude::*};
+use gtk_layer_shell::LayerShell;
 use nix::unistd;
 use serde::Deserialize;
 use wl_clipboard_rs::copy;
@@ -301,29 +302,27 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
         .build();
 
     // Init GTK layer shell
-    gtk_layer_shell::init_for_window(&window);
+    window.init_layer_shell();
 
     // Make layer-window fullscreen
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Top, true);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Bottom, true);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Left, true);
-    gtk_layer_shell::set_anchor(&window, gtk_layer_shell::Edge::Right, true);
+    window.set_anchor(gtk_layer_shell::Edge::Top, true);
+    window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
+    window.set_anchor(gtk_layer_shell::Edge::Left, true);
+    window.set_anchor(gtk_layer_shell::Edge::Right, true);
 
-    gtk_layer_shell::set_namespace(&window, "anyrun");
+    window.set_namespace("anyrun");
 
     if runtime_data.borrow().config.ignore_exclusive_zones {
-        gtk_layer_shell::set_exclusive_zone(&window, -1);
+        window.set_exclusive_zone(-1);
     }
 
-    gtk_layer_shell::set_keyboard_mode(&window, gtk_layer_shell::KeyboardMode::Exclusive);
+    window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::Exclusive);
 
     match runtime_data.borrow().config.layer {
-        Layer::Background => {
-            gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Background)
-        }
-        Layer::Bottom => gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Bottom),
-        Layer::Top => gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Top),
-        Layer::Overlay => gtk_layer_shell::set_layer(&window, gtk_layer_shell::Layer::Overlay),
+        Layer::Background => window.set_layer(gtk_layer_shell::Layer::Background),
+        Layer::Bottom => window.set_layer(gtk_layer_shell::Layer::Bottom),
+        Layer::Top => window.set_layer(gtk_layer_shell::Layer::Top),
+        Layer::Overlay => window.set_layer(gtk_layer_shell::Layer::Overlay),
     };
 
     // Try to load custom CSS, if it fails load the default CSS
@@ -481,7 +480,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
             // Close window on escape
             constants::Escape => {
                 window.close();
-                Inhibit(true)
+                glib::Propagation::Stop
             }
             // Handle selections
             constants::Down | constants::Tab | constants::Up => {
@@ -522,7 +521,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                                     _ => unreachable!(),
                                 }
                             }
-                            return Inhibit(true);
+                            return glib::Propagation::Stop;
                         }
                     };
 
@@ -562,7 +561,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                     _ => unreachable!(),
                 }
 
-                Inhibit(true)
+                glib::Propagation::Stop
             }
             // Handle when the selected match is "activated"
             constants::Return => {
@@ -574,9 +573,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                     .find_map(|view| view.list.selected_row().map(|row| (row, view)))
                 {
                     Some(selected) => selected,
-                    None => {
-                        return Inhibit(false);
-                    }
+                    None => return glib::Propagation::Proceed,
                 };
 
                 // Perform actions based on the result of handling the selection
@@ -585,7 +582,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                 }) {
                     HandleResult::Close => {
                         window.close();
-                        Inhibit(true)
+                        glib::Propagation::Stop
                     }
                     HandleResult::Refresh(exclusive) => {
                         if exclusive {
@@ -595,23 +592,23 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                         }
                         mem::drop(_runtime_data_clone); // Drop the mutable borrow
                         refresh_matches(entry_clone.text().into(), runtime_data_clone.clone());
-                        Inhibit(false)
+                        glib::Propagation::Proceed
                     }
                     HandleResult::Copy(bytes) => {
                         _runtime_data_clone.post_run_action = PostRunAction::Copy(bytes.into());
                         window.close();
-                        Inhibit(true)
+                        glib::Propagation::Stop
                     }
                     HandleResult::Stdout(bytes) => {
                         if let Err(why) = io::stdout().lock().write_all(&bytes) {
                             eprintln!("Error outputting content to stdout: {}", why);
                         }
                         window.close();
-                        Inhibit(true)
+                        glib::Propagation::Stop
                     }
                 }
             }
-            _ => Inhibit(false),
+            _ => glib::Propagation::Proceed,
         }
     });
 
@@ -621,9 +618,9 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
         window.connect_button_press_event(move |window, event| {
             if event.window() == window.window() {
                 window.close();
-                Inhibit(true)
+                glib::Propagation::Stop
             } else {
-                Inhibit(false)
+                glib::Propagation::Proceed
             }
         });
     }
@@ -662,7 +659,7 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
                 if !runtime_data.error_label.is_empty() {
                     main_vbox.add(
                         &gtk::Label::builder()
-                            .label(&format!(
+                            .label(format!(
                                 r#"<span foreground="red">{}</span>"#,
                                 runtime_data.error_label
                             ))
@@ -745,7 +742,7 @@ fn handle_matches(plugin_view: PluginView, runtime_data: &RuntimeData, matches: 
             .halign(gtk::Align::Start)
             .valign(gtk::Align::Center)
             .vexpand(true)
-            .label(&_match.title)
+            .label(_match.title.to_string())
             .build();
 
         // If a description is present, make a box with it and the title
@@ -766,7 +763,7 @@ fn handle_matches(plugin_view: PluginView, runtime_data: &RuntimeData, matches: 
                         .use_markup(_match.use_pango)
                         .halign(gtk::Align::Start)
                         .valign(gtk::Align::Center)
-                        .label(desc)
+                        .label(desc.to_string())
                         .build(),
                 );
                 hbox.add(&title_desc_box);
@@ -816,7 +813,7 @@ fn handle_matches(plugin_view: PluginView, runtime_data: &RuntimeData, matches: 
         }
     }
 
-    if let Some((row, view)) = combined_matches.get(0) {
+    if let Some((row, view)) = combined_matches.first() {
         view.list.select_row(Some(row));
     }
 }
@@ -844,7 +841,7 @@ fn create_info_box(info: &PluginInfo, hide_icons: bool) -> gtk::Box {
     }
     info_box.add(
         &gtk::Label::builder()
-            .label(&info.name)
+            .label(info.name.to_string())
             .name(style_names::PLUGIN)
             .halign(gtk::Align::End)
             .valign(gtk::Align::Center)
@@ -894,13 +891,13 @@ fn async_match(
     plugin_view: PluginView,
     runtime_data: Rc<RefCell<RuntimeData>>,
     id: u64,
-) -> glib::Continue {
+) -> glib::ControlFlow {
     match plugin_view.plugin.poll_matches()(id) {
         PollResult::Ready(matches) => {
             handle_matches(plugin_view, &runtime_data.borrow(), matches);
-            glib::Continue(false)
+            glib::ControlFlow::Break
         }
-        PollResult::Pending => glib::Continue(true),
-        PollResult::Cancelled => glib::Continue(false),
+        PollResult::Pending => glib::ControlFlow::Continue,
+        PollResult::Cancelled => glib::ControlFlow::Break,
     }
 }
