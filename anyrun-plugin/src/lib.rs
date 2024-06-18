@@ -17,3 +17,7 @@ for integrating with `stable_abi`.
 
 * `$type`: The type of the shared data to be provided to various functions.
 */
+
+#[doc = include_str!("../../README.md")]
+#[cfg(doctest)]
+struct ReadmeDoctest;
