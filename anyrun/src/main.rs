@@ -79,9 +79,10 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
     runtime_data.borrow_mut().plugins = plugins;
 
     connect_selection_events(runtime_data.clone());
-    let entry = setup_entry(runtime_data.clone());
 
+    let entry = setup_entry(runtime_data.clone());
     let entry_rc = Rc::new(entry);
+
     let main_list_rc = Rc::new(main_list);
 
     let runtime_data_clone = runtime_data.clone().clone();
