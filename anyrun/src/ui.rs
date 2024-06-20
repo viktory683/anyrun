@@ -191,8 +191,8 @@ pub fn connect_selection_events(runtime_data: Rc<RefCell<RuntimeData>>) {
     }
 }
 
-pub fn setup_entry(runtime_data: Rc<RefCell<RuntimeData>>) -> gtk::Entry {
-    let entry = gtk::Entry::builder()
+pub fn setup_entry(runtime_data: Rc<RefCell<RuntimeData>>) -> gtk::SearchEntry {
+    let entry = gtk::SearchEntry::builder()
         .hexpand(true)
         .name(style_names::ENTRY)
         .build();
@@ -201,10 +201,11 @@ pub fn setup_entry(runtime_data: Rc<RefCell<RuntimeData>>) -> gtk::Entry {
     }
     entry
 }
+
 pub fn connect_key_press_events(
     window: &gtk::ApplicationWindow,
     runtime_data: Rc<RefCell<RuntimeData>>,
-    entry_clone: Rc<gtk::Entry>,
+    entry: Rc<impl EntryExt>,
 ) {
     window.connect_key_press_event(move |window, event| {
         use gdk::keys::constants;
@@ -218,7 +219,7 @@ pub fn connect_key_press_events(
                 glib::Propagation::Stop
             }
             constants::Return => {
-                handle_selection_activation(window, runtime_data.clone(), entry_clone.clone());
+                handle_selection_activation(window, runtime_data.clone(), entry.clone());
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,
@@ -306,7 +307,7 @@ fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<R
 fn handle_selection_activation(
     window: &gtk::ApplicationWindow,
     runtime_data: Rc<RefCell<RuntimeData>>,
-    entry_clone: Rc<gtk::Entry>,
+    entry: Rc<impl EntryExt>,
 ) {
     let mut _runtime_data_clone = runtime_data.borrow_mut();
 
@@ -332,7 +333,7 @@ fn handle_selection_activation(
                 _runtime_data_clone.exclusive = None;
             }
             mem::drop(_runtime_data_clone);
-            refresh_matches(entry_clone.text().to_string(), runtime_data.clone());
+            refresh_matches(entry.text().to_string(), runtime_data.clone());
         }
         HandleResult::Copy(bytes) => {
             _runtime_data_clone.post_run_action = PostRunAction::Copy(bytes.into());
@@ -366,7 +367,7 @@ pub fn handle_close_on_click(
 pub fn setup_configure_event(
     window: &gtk::ApplicationWindow,
     runtime_data: Rc<RefCell<RuntimeData>>,
-    entry: Rc<gtk::Entry>,
+    entry: Rc<impl WidgetExt>,
     main_list: Rc<gtk::ListBox>,
 ) {
     let configure_once = Once::new();
