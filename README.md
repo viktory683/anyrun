@@ -331,3 +331,6 @@ plugins in the [plugins](plugins) folder for more examples.
 
 - [ ] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
 - [ ] Get rid of full screen window
+- [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
+  - [ ] `?` should return some common help or default usage for plugin
+  - [ ] `? <plugin>` should return some plugin usage (maybe based on it's config)
