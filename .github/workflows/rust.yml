@@ -68,7 +68,7 @@ jobs:
         run: rustup component add clippy
 
       - name: Run Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets -- --deny warnings -A clippy::invisible_characters
 
   fmt:
     runs-on: ubuntu-latest
