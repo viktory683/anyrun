@@ -1,9 +1,9 @@
-use std::{cell::RefCell, path::PathBuf, rc::Rc, time::Duration};
+use std::{cell::RefCell, env, path::PathBuf, rc::Rc, time::Duration};
 
 use abi_stable::std_types::{ROption, RVec};
 use anyrun_interface::{Match, PluginRef, PollResult};
 
-use crate::types::{style_names, PluginView, RuntimeData};
+use crate::types::{style_names, PluginView, RuntimeData, DEFAULT_CONFIG_DIR};
 
 use gtk::{gdk_pixbuf, glib, prelude::*};
 
@@ -169,7 +169,23 @@ fn handle_matches(
 /// let plugin_dirs = vec![PathBuf::from("/usr/local/lib/plugins"), PathBuf::from("/opt/plugins")];
 /// let plugin = load_plugin(&plugin_path, &plugin_dirs);
 /// ```
-pub fn load_plugin(plugin_path: &PathBuf, plugins_paths: &[PathBuf]) -> PluginRef {
+pub fn load_plugin(plugin_path: &PathBuf, runtime_data: Rc<RefCell<RuntimeData>>) -> PluginRef {
+    // TODO maybe we should not add some default paths to parsed ANYRUN_PLUGINS
+    // like defaults used only if ANYRUN_PLUGINS is None
+    let mut plugins_paths: Vec<PathBuf> = match env::var_os("ANYRUN_PLUGINS") {
+        Some(paths) => env::split_paths(&paths).collect(),
+        None => vec![],
+    };
+    plugins_paths.append(
+        &mut [
+            runtime_data.borrow().config_dir.clone(),
+            DEFAULT_CONFIG_DIR.to_string(),
+        ]
+        .iter()
+        .map(|plugins_path| PathBuf::from(format!("{}/plugins", plugins_path)))
+        .collect(),
+    );
+
     let path = if plugin_path.is_absolute() {
         plugin_path.clone()
     } else {
@@ -184,9 +200,11 @@ pub fn load_plugin(plugin_path: &PathBuf, plugins_paths: &[PathBuf]) -> PluginRe
             .unwrap_or_else(|| panic!("Invalid plugin path: {}", plugin_path.to_string_lossy()))
     };
 
-    abi_stable::library::lib_header_from_path(&path)
+    let plugin = abi_stable::library::lib_header_from_path(&path)
         .and_then(|plugin| plugin.init_root_module::<PluginRef>())
-        .unwrap_or_else(|_| panic!("Failed to load plugin: {}", path.to_string_lossy()))
+        .unwrap_or_else(|_| panic!("Failed to load plugin: {}", path.to_string_lossy()));
+    plugin.init()(runtime_data.borrow().config_dir.clone().into());
+    plugin
 }
 
 /// Refresh the matches from the plugins

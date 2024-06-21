@@ -1,4 +1,4 @@
-use std::{cell::RefCell, env, io, mem, path::PathBuf, rc::Rc, sync::Once};
+use std::{cell::RefCell, io, mem, rc::Rc, sync::Once};
 
 use anyrun_interface::{HandleResult, Match, PluginInfo};
 use gtk::{gdk, glib, prelude::*};
@@ -6,11 +6,11 @@ use gtk_layer_shell::LayerShell;
 
 use crate::{
     plugin::{load_plugin, refresh_matches},
-    types::{style_names, PluginView, PostRunAction, RuntimeData, DEFAULT_CONFIG_DIR},
+    types::{style_names, PluginView, PostRunAction, RuntimeData},
 };
 
 pub fn setup_main_window(
-    app: &gtk::Application,
+    app: &impl IsA<gtk::Application>,
     runtime_data: Rc<RefCell<RuntimeData>>,
 ) -> gtk::ApplicationWindow {
     let window = gtk::ApplicationWindow::builder()
@@ -64,33 +64,15 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
 
 pub fn load_plugins(
     runtime_data: Rc<RefCell<RuntimeData>>,
-    main_list: &gtk::ListBox,
+    main_list: Rc<impl ContainerExt>,
 ) -> Vec<PluginView> {
-    // TODO maybe we should not add some default paths to parsed ANYRUN_PLUGINS
-    // like defaults used only if ANYRUN_PLUGINS is None
-    let mut plugins_paths: Vec<PathBuf> = match env::var_os("ANYRUN_PLUGINS") {
-        Some(paths) => env::split_paths(&paths).collect(),
-        None => vec![],
-    };
-
-    plugins_paths.append(
-        &mut [
-            runtime_data.borrow().config_dir.clone(),
-            DEFAULT_CONFIG_DIR.to_string(),
-        ]
-        .iter()
-        .map(|plugins_path| PathBuf::from(format!("{}/plugins", plugins_path)))
-        .collect(),
-    );
-
     runtime_data
         .borrow()
         .config
         .plugins
         .iter()
         .map(|plugin_path| {
-            let plugin = load_plugin(plugin_path, &plugins_paths);
-            plugin.init()(runtime_data.borrow().config_dir.clone().into());
+            let plugin = load_plugin(plugin_path, runtime_data.clone());
 
             let plugin_box = gtk::Box::builder()
                 .orientation(gtk::Orientation::Horizontal)
@@ -214,7 +196,7 @@ pub fn setup_entry(runtime_data: Rc<RefCell<RuntimeData>>) -> gtk::SearchEntry {
 }
 
 pub fn connect_key_press_events(
-    window: &gtk::ApplicationWindow,
+    window: Rc<impl WidgetExt + GtkWindowExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     entry: Rc<impl EntryExt>,
 ) {
@@ -230,7 +212,11 @@ pub fn connect_key_press_events(
                 glib::Propagation::Stop
             }
             Key::Return => {
-                handle_selection_activation(window, runtime_data.clone(), entry.clone());
+                handle_selection_activation(
+                    window.clone().into(),
+                    runtime_data.clone(),
+                    entry.clone(),
+                );
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,
@@ -316,7 +302,7 @@ fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<R
 }
 
 fn handle_selection_activation(
-    window: &gtk::ApplicationWindow,
+    window: Rc<impl GtkWindowExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     entry: Rc<impl EntryExt>,
 ) {
@@ -359,7 +345,7 @@ fn handle_selection_activation(
     }
 }
 
-pub fn handle_close_on_click(window: &gtk::ApplicationWindow) {
+pub fn handle_close_on_click(window: Rc<impl WidgetExt + GtkWindowExt>) {
     window.connect_button_press_event(move |window, event| {
         if event.window() != window.window() {
             return glib::Propagation::Proceed;
@@ -371,10 +357,10 @@ pub fn handle_close_on_click(window: &gtk::ApplicationWindow) {
 }
 
 pub fn setup_configure_event(
-    window: &gtk::ApplicationWindow,
+    window: Rc<impl WidgetExt + ContainerExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     entry: Rc<impl WidgetExt>,
-    main_list: Rc<gtk::ListBox>,
+    main_list: Rc<impl WidgetExt>,
 ) {
     let configure_once = Once::new();
 
@@ -387,11 +373,8 @@ pub fn setup_configure_event(
             let runtime_data = runtime_data.borrow();
 
             let width = runtime_data.config.width.to_val(event.size().0);
-            let x = runtime_data.config.x.to_val(event.size().0) - width / 2;
             let height = runtime_data.config.height.to_val(event.size().1);
-            let y = runtime_data.config.y.to_val(event.size().1) - height / 2;
 
-            let fixed = gtk::Fixed::builder().build();
             let main_vbox = gtk::Box::builder()
                 .orientation(gtk::Orientation::Vertical)
                 .halign(gtk::Align::Center)
@@ -415,10 +398,15 @@ pub fn setup_configure_event(
                 );
             }
 
+            
+            let fixed = gtk::Fixed::builder().build();
+            let x = runtime_data.config.x.to_val(event.size().0) - width / 2;
+            let y = runtime_data.config.y.to_val(event.size().1) - height / 2;
             fixed.put(&main_vbox, x, y);
+            
             window.add(&fixed);
             window.show_all();
-
+            
             main_vbox.add(&*main_list);
             main_list.show();
             entry.grab_focus();

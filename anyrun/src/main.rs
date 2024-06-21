@@ -68,36 +68,34 @@ fn serve_copy_requests(bytes: &[u8]) {
     .expect("Failed to serve copy bytes");
 }
 
-fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
-    let window = setup_main_window(app, runtime_data.clone());
+fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeData>>) {
     load_custom_css(runtime_data.clone());
-    let main_list = gtk::ListBox::builder()
-        .selection_mode(gtk::SelectionMode::None)
-        .name(style_names::MAIN)
-        .build();
 
-    let plugins = load_plugins(runtime_data.clone(), &main_list);
+    let main_list_rc = Rc::new(
+        gtk::ListBox::builder()
+            .selection_mode(gtk::SelectionMode::None)
+            .name(style_names::MAIN)
+            .build(),
+    );
+    let plugins = load_plugins(runtime_data.clone(), main_list_rc.clone());
     runtime_data.borrow_mut().plugins = plugins;
 
     connect_selection_events(runtime_data.clone());
 
-    let entry = setup_entry(runtime_data.clone());
-    let entry_rc = Rc::new(entry);
-
-    let main_list_rc = Rc::new(main_list);
-
-    let runtime_data_clone = runtime_data.clone().clone();
+    let entry_rc = Rc::new(setup_entry(runtime_data.clone()));
+    let runtime_data_clone = runtime_data.clone();
     entry_rc.clone().connect_changed(move |entry| {
         refresh_matches(entry.text().to_string(), runtime_data_clone.clone())
     });
 
-    connect_key_press_events(&window, runtime_data.clone().clone(), entry_rc.clone());
+    let window = Rc::new(setup_main_window(app, runtime_data.clone()));
+    connect_key_press_events(window.clone(), runtime_data.clone(), entry_rc.clone());
     if runtime_data.borrow().config.close_on_click {
-        handle_close_on_click(&window);
+        handle_close_on_click(window.clone());
     }
 
     setup_configure_event(
-        &window,
+        window.clone(),
         runtime_data.clone(),
         entry_rc.clone(),
         main_list_rc.clone(),
