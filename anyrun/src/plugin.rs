@@ -7,6 +7,19 @@ use crate::types::{style_names, PluginView, RuntimeData};
 
 use gtk::{gdk_pixbuf, glib, prelude::*};
 
+pub fn build_label(name: String, use_markup: bool, label: String) -> gtk::Label {
+    gtk::Label::builder()
+        .name(name)
+        .wrap(true)
+        .xalign(0.0)
+        .use_markup(use_markup)
+        .halign(gtk::Align::Start)
+        .valign(gtk::Align::Center)
+        .vexpand(true)
+        .label(label)
+        .build()
+}
+
 fn handle_matches(
     plugin_view: PluginView,
     runtime_data: Rc<RefCell<RuntimeData>>,
@@ -33,7 +46,7 @@ fn handle_matches(
 
         if !runtime_data.borrow().config.hide_icons {
             if let ROption::RSome(icon) = &_match.icon {
-                let mut builder = gtk::Image::builder()
+                let mut match_image = gtk::Image::builder()
                     .name(style_names::MATCH)
                     .pixel_size(32);
 
@@ -42,30 +55,26 @@ fn handle_matches(
                 // If the icon path is absolute, load that file
                 if path.is_absolute() {
                     match gdk_pixbuf::Pixbuf::from_file_at_size(icon.as_str(), 32, 32) {
-                        Ok(pixbuf) => builder = builder.pixbuf(&pixbuf),
+                        Ok(pixbuf) => match_image = match_image.pixbuf(&pixbuf),
                         Err(why) => {
                             println!("Failed to load icon file: {}", why);
-                            builder = builder.icon_name("image-missing"); // Set "broken" icon
+                            // Set "broken" icon
+                            match_image = match_image.icon_name("image-missing");
                         }
                     }
                 } else {
-                    builder = builder.icon_name(icon);
+                    match_image = match_image.icon_name(icon);
                 }
 
-                hbox.add(&builder.build());
+                hbox.add(&match_image.build());
             }
         }
 
-        let title = gtk::Label::builder()
-            .name(style_names::MATCH_TITLE)
-            .wrap(true)
-            .xalign(0.0)
-            .use_markup(_match.use_pango)
-            .halign(gtk::Align::Start)
-            .valign(gtk::Align::Center)
-            .vexpand(true)
-            .label(_match.title.to_string())
-            .build();
+        let title = build_label(
+            style_names::MATCH_TITLE.to_string(),
+            _match.use_pango,
+            _match.title.to_string(),
+        );
 
         // If a description is present, make a box with it and the title
         match &_match.description {
@@ -77,17 +86,11 @@ fn handle_matches(
                     .vexpand(true)
                     .build();
                 title_desc_box.add(&title);
-                title_desc_box.add(
-                    &gtk::Label::builder()
-                        .name(style_names::MATCH_DESC)
-                        .wrap(true)
-                        .xalign(0.0)
-                        .use_markup(_match.use_pango)
-                        .halign(gtk::Align::Start)
-                        .valign(gtk::Align::Center)
-                        .label(desc.to_string())
-                        .build(),
-                );
+                title_desc_box.add(&build_label(
+                    style_names::MATCH_DESC.to_string(),
+                    _match.use_pango,
+                    desc.to_string(),
+                ));
                 hbox.add(&title_desc_box);
             }
             ROption::RNone => {
@@ -142,24 +145,48 @@ fn handle_matches(
     }
 }
 
-pub fn load_plugin(plugin_path: &PathBuf, plugin_paths: &[PathBuf]) -> PluginRef {
-    if plugin_path.is_absolute() {
-        abi_stable::library::lib_header_from_path(plugin_path)
+/// Loads a plugin from the specified path or from the provided directories if the path is not absolute.
+///
+/// # Arguments
+///
+/// * `plugin_path` - A relative or absolute path to the plugin file (e.g., "libapplication.so").
+/// * `plugins_paths` - A slice of directory paths where plugin files may be located.
+///
+/// # Returns
+///
+/// * `PluginRef` - A reference to the loaded plugin.
+///
+/// # Panics
+///
+/// This function will panic if:
+/// * The provided `plugin_path` does not exist in any of the `plugin_paths` directories.
+/// * The plugin fails to load or initialize.
+///
+/// # Example
+///
+/// ```
+/// let plugin_path = PathBuf::from("libapplication.so");
+/// let plugin_dirs = vec![PathBuf::from("/usr/local/lib/plugins"), PathBuf::from("/opt/plugins")];
+/// let plugin = load_plugin(&plugin_path, &plugin_dirs);
+/// ```
+pub fn load_plugin(plugin_path: &PathBuf, plugins_paths: &[PathBuf]) -> PluginRef {
+    let path = if plugin_path.is_absolute() {
+        plugin_path.clone()
     } else {
-        let path = plugin_paths
+        plugins_paths
             .iter()
-            .map(|path| {
-                let mut p = path.clone();
+            .map(|plugins_path| {
+                let mut p = plugins_path.clone();
                 p.push(plugin_path);
                 p
             })
             .find(|path| path.exists())
-            .expect("Invalid plugin path");
+            .unwrap_or_else(|| panic!("Invalid plugin path: {}", plugin_path.to_string_lossy()))
+    };
 
-        abi_stable::library::lib_header_from_path(&path)
-    }
-    .and_then(|plugin| plugin.init_root_module::<PluginRef>())
-    .expect("Failed to load plugin")
+    abi_stable::library::lib_header_from_path(&path)
+        .and_then(|plugin| plugin.init_root_module::<PluginRef>())
+        .unwrap_or_else(|_| panic!("Failed to load plugin: {}", path.to_string_lossy()))
 }
 
 /// Refresh the matches from the plugins

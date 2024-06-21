@@ -96,6 +96,17 @@ pub enum Layer {
     Overlay,
 }
 
+impl Layer {
+    pub fn to_g_layer(&self) -> gtk_layer_shell::Layer {
+        match self {
+            Layer::Background => gtk_layer_shell::Layer::Background,
+            Layer::Bottom => gtk_layer_shell::Layer::Bottom,
+            Layer::Top => gtk_layer_shell::Layer::Top,
+            Layer::Overlay => gtk_layer_shell::Layer::Overlay,
+        }
+    }
+}
+
 // Could have a better name
 #[derive(Deserialize, Clone)]
 pub enum RelativeNum {
@@ -196,21 +207,26 @@ pub const DEFAULT_CONFIG_DIR: &str = "/etc/anyrun";
 
 pub fn load_config(config_dir: &str) -> (Config, String) {
     let config_path = format!("{}/config.ron", config_dir);
-    match fs::read_to_string(config_path) {
-        Ok(content) => match ron::from_str(&content) {
-            Ok(config) => (config, String::new()),
-            Err(why) => (
+
+    let content = match fs::read_to_string(config_path) {
+        Ok(content) => content,
+        Err(why) => {
+            return (
                 Config::default(),
                 format!(
-                    "Failed to parse Anyrun config file, using default config: {}",
+                    "Failed to read Anyrun config file, using default config: {}",
                     why
                 ),
-            ),
-        },
+            )
+        }
+    };
+
+    match ron::from_str(&content) {
+        Ok(config) => (config, String::new()),
         Err(why) => (
             Config::default(),
             format!(
-                "Failed to read Anyrun config file, using default config: {}",
+                "Failed to parse Anyrun config file, using default config: {}",
                 why
             ),
         ),
@@ -218,12 +234,12 @@ pub fn load_config(config_dir: &str) -> (Config, String) {
 }
 
 pub fn determine_config_dir(config_dir_arg: &Option<String>) -> String {
-    let user_dir = format!(
-        "{}/.config/anyrun",
-        env::var("HOME").expect("Could not determine home directory! Is $HOME set?")
-    );
-
     config_dir_arg.clone().unwrap_or_else(|| {
+        let user_dir = format!(
+            "{}/.config/anyrun",
+            env::var("HOME").expect("Could not determine home directory! Is $HOME set?")
+        );
+
         if PathBuf::from(&user_dir).exists() {
             user_dir
         } else {

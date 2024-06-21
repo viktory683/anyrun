@@ -1,18 +1,13 @@
 use std::{cell::RefCell, env, io, mem, path::PathBuf, rc::Rc, sync::Once};
 
 use anyrun_interface::{HandleResult, Match, PluginInfo};
-use gtk::{gdk, gio, glib, prelude::*};
+use gtk::{gdk, glib, prelude::*};
 use gtk_layer_shell::LayerShell;
 
 use crate::{
     plugin::{load_plugin, refresh_matches},
-    types::{style_names, Layer, PluginView, PostRunAction, RuntimeData, DEFAULT_CONFIG_DIR},
+    types::{style_names, PluginView, PostRunAction, RuntimeData, DEFAULT_CONFIG_DIR},
 };
-
-pub fn register_application(app: &gtk::Application) {
-    app.register(None::<&gio::Cancellable>)
-        .expect("Failed to register application");
-}
 
 pub fn setup_main_window(
     app: &gtk::Application,
@@ -24,10 +19,16 @@ pub fn setup_main_window(
         .build();
 
     window.init_layer_shell();
-    window.set_anchor(gtk_layer_shell::Edge::Top, true);
-    window.set_anchor(gtk_layer_shell::Edge::Bottom, true);
-    window.set_anchor(gtk_layer_shell::Edge::Left, true);
-    window.set_anchor(gtk_layer_shell::Edge::Right, true);
+
+    [
+        gtk_layer_shell::Edge::Top,
+        gtk_layer_shell::Edge::Bottom,
+        gtk_layer_shell::Edge::Left,
+        gtk_layer_shell::Edge::Right,
+    ]
+    .iter()
+    .for_each(|edge| window.set_anchor(*edge, true));
+
     window.set_namespace("anyrun");
 
     if runtime_data.borrow().config.ignore_exclusive_zones {
@@ -36,28 +37,26 @@ pub fn setup_main_window(
 
     window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::Exclusive);
 
-    match runtime_data.borrow().config.layer {
-        Layer::Background => window.set_layer(gtk_layer_shell::Layer::Background),
-        Layer::Bottom => window.set_layer(gtk_layer_shell::Layer::Bottom),
-        Layer::Top => window.set_layer(gtk_layer_shell::Layer::Top),
-        Layer::Overlay => window.set_layer(gtk_layer_shell::Layer::Overlay),
-    };
+    window.set_layer(runtime_data.borrow().config.layer.to_g_layer());
 
     window
 }
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     let provider = gtk::CssProvider::new();
-    if let Err(why) =
-        provider.load_from_path(&format!("{}/style.css", runtime_data.borrow().config_dir))
-    {
+    let config_dir = &runtime_data.borrow().config_dir;
+    let css_path = format!("{}/style.css", config_dir);
+
+    if let Err(why) = provider.load_from_path(&css_path) {
         eprintln!("Failed to load custom CSS: {}", why);
         provider
             .load_from_data(include_bytes!("../res/style.css"))
-            .unwrap();
+            .expect("Failed to load embedded CSS data");
     }
+
+    let screen = gdk::Screen::default().expect("Failed to get GDK screen for CSS provider!");
     gtk::StyleContext::add_provider_for_screen(
-        &gdk::Screen::default().expect("Failed to get GDK screen for CSS provider!"),
+        &screen,
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
@@ -67,15 +66,22 @@ pub fn load_plugins(
     runtime_data: Rc<RefCell<RuntimeData>>,
     main_list: &gtk::ListBox,
 ) -> Vec<PluginView> {
-    let mut plugin_paths = match env::var("ANYRUN_PLUGINS") {
-        Ok(string) => string.split(':').map(PathBuf::from).collect::<Vec<_>>(),
-        Err(_) => Vec::new(),
+    // TODO maybe we should not add some default paths to parsed ANYRUN_PLUGINS
+    // like defaults used only if ANYRUN_PLUGINS is None
+    let mut plugins_paths: Vec<PathBuf> = match env::var_os("ANYRUN_PLUGINS") {
+        Some(paths) => env::split_paths(&paths).collect(),
+        None => vec![],
     };
 
-    plugin_paths.append(&mut vec![
-        format!("{}/plugins", runtime_data.borrow().config_dir).into(),
-        format!("{}/plugins", DEFAULT_CONFIG_DIR).into(),
-    ]);
+    plugins_paths.append(
+        &mut [
+            runtime_data.borrow().config_dir.clone(),
+            DEFAULT_CONFIG_DIR.to_string(),
+        ]
+        .iter()
+        .map(|plugins_path| PathBuf::from(format!("{}/plugins", plugins_path)))
+        .collect(),
+    );
 
     runtime_data
         .borrow()
@@ -83,7 +89,7 @@ pub fn load_plugins(
         .plugins
         .iter()
         .map(|plugin_path| {
-            let plugin = load_plugin(plugin_path, &plugin_paths);
+            let plugin = load_plugin(plugin_path, &plugins_paths);
             plugin.init()(runtime_data.borrow().config_dir.clone().into());
 
             let plugin_box = gtk::Box::builder()
@@ -111,7 +117,12 @@ pub fn load_plugins(
                 .build();
             plugin_box.add(&list);
 
-            let row = gtk::ListBoxRow::builder().name(style_names::PLUGIN).build();
+            let row = gtk::ListBoxRow::builder()
+                .activatable(false)
+                .selectable(false)
+                .can_focus(false)
+                .name(style_names::PLUGIN)
+                .build();
             row.add(&plugin_box);
             main_list.add(&row);
 
@@ -208,17 +219,17 @@ pub fn connect_key_press_events(
     entry: Rc<impl EntryExt>,
 ) {
     window.connect_key_press_event(move |window, event| {
-        use gdk::keys::constants;
+        use gdk::keys::constants as Key;
         match event.keyval() {
-            constants::Escape => {
+            Key::Escape => {
                 window.close();
                 glib::Propagation::Stop
             }
-            constants::Down | constants::Tab | constants::Up => {
+            Key::Down | Key::Tab | Key::Up => {
                 handle_selection_navigation(event, runtime_data.clone());
                 glib::Propagation::Stop
             }
-            constants::Return => {
+            Key::Return => {
                 handle_selection_activation(window, runtime_data.clone(), entry.clone());
                 glib::Propagation::Stop
             }
@@ -228,7 +239,7 @@ pub fn connect_key_press_events(
 }
 
 fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<RuntimeData>>) {
-    use gdk::keys::constants;
+    use gdk::keys::constants as Key;
 
     let combined_matches = runtime_data
         .borrow()
@@ -254,10 +265,10 @@ fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<R
         None => {
             if !combined_matches.is_empty() {
                 match event.keyval() {
-                    constants::Down | constants::Tab => combined_matches[0]
+                    Key::Down | Key::Tab => combined_matches[0]
                         .1
                         .select_row(Some(&combined_matches[0].0)),
-                    constants::Up => combined_matches
+                    Key::Up => combined_matches
                         .last()
                         .unwrap()
                         .1
@@ -276,7 +287,7 @@ fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<R
         .position(|(row, _list)| *row == selected_match)
         .unwrap();
     match event.keyval() {
-        constants::Down | constants::Tab => {
+        Key::Down | Key::Tab => {
             if index + 1 != combined_matches.len() {
                 combined_matches[index + 1]
                     .1
@@ -287,7 +298,7 @@ fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<R
                     .select_row(Some(&combined_matches[0].0));
             }
         }
-        constants::Up => {
+        Key::Up => {
             if index != 0 {
                 combined_matches[index - 1]
                     .1
@@ -348,20 +359,15 @@ fn handle_selection_activation(
     }
 }
 
-pub fn handle_close_on_click(
-    window: &gtk::ApplicationWindow,
-    runtime_data: Rc<RefCell<RuntimeData>>,
-) {
-    if runtime_data.borrow().config.close_on_click {
-        window.connect_button_press_event(move |window, event| {
-            if event.window() == window.window() {
-                window.close();
-                glib::Propagation::Stop
-            } else {
-                glib::Propagation::Proceed
-            }
-        });
-    }
+pub fn handle_close_on_click(window: &gtk::ApplicationWindow) {
+    window.connect_button_press_event(move |window, event| {
+        if event.window() != window.window() {
+            return glib::Propagation::Proceed;
+        }
+
+        window.close();
+        glib::Propagation::Stop
+    });
 }
 
 pub fn setup_configure_event(

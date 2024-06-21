@@ -5,7 +5,7 @@ mod ui;
 use std::{cell::RefCell, rc::Rc};
 
 use clap::Parser;
-use gtk::prelude::*;
+use gtk::{gio, prelude::*};
 use nix::unistd;
 
 use plugin::refresh_matches;
@@ -15,7 +15,8 @@ use wl_clipboard_rs::copy;
 
 fn main() {
     let app = gtk::Application::new(Some("com.kirottu.anyrun"), Default::default());
-    register_application(&app);
+    app.register(gio::Cancellable::NONE)
+        .expect("Failed to register application");
 
     if app.is_remote() {
         return;
@@ -91,7 +92,9 @@ fn activate(app: &gtk::Application, runtime_data: Rc<RefCell<RuntimeData>>) {
     });
 
     connect_key_press_events(&window, runtime_data.clone().clone(), entry_rc.clone());
-    handle_close_on_click(&window, runtime_data.clone());
+    if runtime_data.borrow().config.close_on_click {
+        handle_close_on_click(&window);
+    }
 
     setup_configure_event(
         &window,
