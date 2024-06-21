@@ -1,7 +1,6 @@
 [submodule "plugins/applications"]
 	path = plugins/applications
-	url = https://github.com/peppidesu/plugin-applications.git
-	branch = desktop-entry-spec-fix
+	url = https://github.com/viktory683/plugin-applications.git
 [submodule "plugins/dictionary"]
 	path = plugins/dictionary
 	url = https://github.com/anyrun-org/plugin-dictionary.git
@@ -20,7 +19,7 @@
 	url = https://github.com/anyrun-org/plugin-shell.git
 [submodule "plugins/stdin"]
 	path = plugins/stdin
-	url = https://github.com/anyrun-org/plugin-stdin.git
+	url = https://github.com/viktory683/plugin-stdin.git
 [submodule "plugins/symbols"]
 	path = plugins/symbols
 	url = https://github.com/anyrun-org/plugin-symbols.git
