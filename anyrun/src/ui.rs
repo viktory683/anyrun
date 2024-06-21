@@ -398,15 +398,14 @@ pub fn setup_configure_event(
                 );
             }
 
-            
             let fixed = gtk::Fixed::builder().build();
             let x = runtime_data.config.x.to_val(event.size().0) - width / 2;
             let y = runtime_data.config.y.to_val(event.size().1) - height / 2;
             fixed.put(&main_vbox, x, y);
-            
+
             window.add(&fixed);
             window.show_all();
-            
+
             main_vbox.add(&*main_list);
             main_list.show();
             entry.grab_focus();
