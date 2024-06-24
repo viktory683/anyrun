@@ -95,15 +95,20 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         gtk::SearchEntry::builder()
             .hexpand(true)
             .name(style_names::ENTRY)
-            .activates_default(true)
             .build(),
     );
-
     setup_entry_changed(
         entry.clone(),
         runtime_data.clone(),
         plugins.clone(),
         main_list.clone(),
+    );
+    setup_entry_activated(
+        entry.clone(),
+        main_list.clone(),
+        window.clone(),
+        runtime_data.clone(),
+        plugins.clone(),
     );
 
     setup_row_activated(
@@ -141,6 +146,22 @@ fn setup_entry_changed(
     entry.connect_changed(move |e| {
         runtime_data.borrow_mut().exclusive = None;
         refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone());
+    });
+}
+
+fn setup_entry_activated(
+    entry: Rc<gtk::SearchEntry>,
+    main_list: Rc<gtk::ListBox>,
+    window: Rc<gtk::ApplicationWindow>,
+    runtime_data: Rc<RefCell<RuntimeData>>,
+    plugins: Vec<Plugin>,
+) {
+    entry.connect_activate(move |e| {
+        if let Some(row) = main_list.children().first() {
+            handle_selection_activation(row.clone(), window.clone(), runtime_data.clone(), |_| {
+                refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone())
+            })
+        }
     });
 }
 
