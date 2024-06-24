@@ -3,6 +3,7 @@
 > **Warning**
 >
 > Nix was not tested and probably will now work
+> 
 > Try at one's own risk
 
 You can use the flake:
