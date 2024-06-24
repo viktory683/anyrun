@@ -1,15 +1,16 @@
-mod plugin;
-mod types;
+mod config;
+mod plugins;
 mod ui;
 
 use std::{cell::RefCell, rc::Rc};
 
+use anyrun_interface::PluginRef as Plugin;
 use clap::Parser;
 use gtk::{gio, prelude::*};
 use nix::unistd;
 
-use plugin::refresh_matches;
-use types::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
+use config::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
+use plugins::{load_plugin, refresh_matches};
 use ui::*;
 use wl_clipboard_rs::copy;
 
@@ -28,7 +29,6 @@ fn main() {
 
     let runtime_data = Rc::new(RefCell::new(RuntimeData {
         exclusive: None,
-        plugins: Vec::new(),
         post_run_action: PostRunAction::None,
         config,
         error_label,
@@ -71,25 +71,50 @@ fn serve_copy_requests(bytes: &[u8]) {
 fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeData>>) {
     load_custom_css(runtime_data.clone());
 
-    let main_list_rc = Rc::new(
+    let main_list = Rc::new(
         gtk::ListBox::builder()
             .selection_mode(gtk::SelectionMode::None)
             .name(style_names::MAIN)
             .build(),
     );
-    let plugins = load_plugins(runtime_data.clone(), main_list_rc.clone());
-    runtime_data.borrow_mut().plugins = plugins;
 
-    connect_selection_events(runtime_data.clone());
-
-    let entry_rc = Rc::new(setup_entry(runtime_data.clone()));
-    let runtime_data_clone = runtime_data.clone();
-    entry_rc.clone().connect_changed(move |entry| {
-        refresh_matches(entry.text().to_string(), runtime_data_clone.clone())
-    });
+    let plugins: Vec<_> = runtime_data
+        .borrow()
+        .config
+        .plugins_paths
+        .iter()
+        .map(|filename| load_plugin(filename, runtime_data.clone()))
+        .collect();
 
     let window = Rc::new(setup_main_window(app, runtime_data.clone()));
-    connect_key_press_events(window.clone(), runtime_data.clone(), entry_rc.clone());
+
+    let entry = Rc::new(
+        gtk::SearchEntry::builder()
+            .hexpand(true)
+            .name(style_names::ENTRY)
+            .build(),
+    );
+
+    setup_entry_changed(
+        entry.clone(),
+        runtime_data.clone(),
+        plugins.clone(),
+        main_list.clone(),
+    );
+
+    setup_row_activated(
+        main_list.clone(),
+        window.clone(),
+        runtime_data.clone(),
+        entry.clone(),
+        plugins.clone(),
+    );
+
+    if runtime_data.borrow().config.show_results_immediately {
+        refresh_matches("", &plugins, main_list.clone(), runtime_data.clone());
+    }
+
+    connect_key_press_events(window.clone());
     if runtime_data.borrow().config.close_on_click {
         handle_close_on_click(window.clone());
     }
@@ -97,8 +122,40 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
     setup_configure_event(
         window.clone(),
         runtime_data.clone(),
-        entry_rc.clone(),
-        main_list_rc.clone(),
+        entry.clone(),
+        main_list.clone(),
     );
     window.show_all();
+}
+
+fn setup_entry_changed(
+    entry: Rc<gtk::SearchEntry>,
+    runtime_data: Rc<RefCell<RuntimeData>>,
+    plugins: Vec<Plugin>,
+    main_list: Rc<gtk::ListBox>,
+) {
+    entry.connect_changed(move |e| {
+        runtime_data.borrow_mut().exclusive = None;
+        refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone());
+    });
+}
+
+fn setup_row_activated(
+    main_list: Rc<gtk::ListBox>,
+    window: Rc<gtk::ApplicationWindow>,
+    runtime_data: Rc<RefCell<RuntimeData>>,
+    entry: Rc<gtk::SearchEntry>,
+    plugins: Vec<Plugin>,
+) {
+    let main_list_clone = main_list.clone();
+    main_list.connect_row_activated(move |_, row| {
+        handle_selection_activation(row.clone(), window.clone(), runtime_data.clone(), |_| {
+            refresh_matches(
+                &entry.text(),
+                &plugins,
+                main_list_clone.clone(),
+                runtime_data.clone(),
+            )
+        })
+    });
 }

@@ -111,7 +111,6 @@ You use it in your system like this:
       hidePluginInfo = false;
       closeOnClick = false;
       showResultsImmediately = false;
-      maxEntries = null;
     };
     extraCss = ''
       .some_class {
@@ -315,6 +314,7 @@ plugins in the [plugins](plugins) folder for more examples.
 - plugins as git submodules
 - updated `wl-clipboard` to `0.8.1` to fix copy-paste issues
 - updated to latest version of `gtk3` with `gtk-layer-shell`
+- flat list instead of list of lists to use native navigation and activation handling (yes now it looks like Krunner)
 - plugins
   - applications
     - replaced with [peppidesu's](https://github.com/peppidesu/plugin-applications.git) repo
@@ -330,6 +330,7 @@ plugins in the [plugins](plugins) folder for more examples.
 ## TODO
 
 - [ ] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
+- [ ] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
 - [ ] Get rid of full screen window
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
   - [ ] `?` should return some common help or default usage for plugin

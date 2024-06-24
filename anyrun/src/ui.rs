@@ -1,13 +1,10 @@
-use std::{cell::RefCell, io, mem, rc::Rc, sync::Once};
+use std::{cell::RefCell, io, rc::Rc, sync::Once};
 
-use anyrun_interface::{HandleResult, Match, PluginInfo};
+use anyrun_interface::{HandleResult, Match, PluginRef as Plugin};
 use gtk::{gdk, glib, prelude::*};
 use gtk_layer_shell::LayerShell;
 
-use crate::{
-    plugin::{load_plugin, refresh_matches},
-    types::{style_names, PluginView, PostRunAction, RuntimeData},
-};
+use crate::config::{style_names, PostRunAction, RuntimeData};
 
 pub fn setup_main_window(
     app: &impl IsA<gtk::Application>,
@@ -18,16 +15,22 @@ pub fn setup_main_window(
         .name(style_names::WINDOW)
         .build();
 
+    setup_layer_shell(&window, runtime_data.clone());
+
+    window
+}
+
+fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<RuntimeData>>) {
     window.init_layer_shell();
 
-    [
+    for edge in &[
         gtk_layer_shell::Edge::Top,
         gtk_layer_shell::Edge::Bottom,
         gtk_layer_shell::Edge::Left,
         gtk_layer_shell::Edge::Right,
-    ]
-    .iter()
-    .for_each(|edge| window.set_anchor(*edge, true));
+    ] {
+        window.set_anchor(*edge, true);
+    }
 
     window.set_namespace("anyrun");
 
@@ -36,10 +39,7 @@ pub fn setup_main_window(
     }
 
     window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::Exclusive);
-
     window.set_layer(runtime_data.borrow().config.layer.to_g_layer());
-
-    window
 }
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
@@ -62,144 +62,7 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     );
 }
 
-pub fn load_plugins(
-    runtime_data: Rc<RefCell<RuntimeData>>,
-    main_list: Rc<impl ContainerExt>,
-) -> Vec<PluginView> {
-    runtime_data
-        .borrow()
-        .config
-        .plugins
-        .iter()
-        .map(|plugin_path| {
-            let plugin = load_plugin(plugin_path, runtime_data.clone());
-
-            let plugin_box = gtk::Box::builder()
-                .orientation(gtk::Orientation::Horizontal)
-                .spacing(10)
-                .name(style_names::PLUGIN)
-                .build();
-
-            if !runtime_data.borrow().config.hide_plugin_info {
-                plugin_box.add(&create_info_box(
-                    &plugin.info()(),
-                    runtime_data.borrow().config.hide_icons,
-                ));
-                plugin_box.add(
-                    &gtk::Separator::builder()
-                        .orientation(gtk::Orientation::Horizontal)
-                        .name(style_names::PLUGIN)
-                        .build(),
-                );
-            }
-
-            let list = gtk::ListBox::builder()
-                .name(style_names::PLUGIN)
-                .hexpand(true)
-                .build();
-            plugin_box.add(&list);
-
-            let row = gtk::ListBoxRow::builder()
-                .activatable(false)
-                .selectable(false)
-                .can_focus(false)
-                .name(style_names::PLUGIN)
-                .build();
-            row.add(&plugin_box);
-            main_list.add(&row);
-
-            PluginView { plugin, row, list }
-        })
-        .collect::<Vec<PluginView>>()
-}
-
-fn create_info_box(info: &PluginInfo, hide_icons: bool) -> gtk::Box {
-    let info_box = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .name(style_names::PLUGIN)
-        .width_request(200)
-        .height_request(32)
-        .expand(false)
-        .spacing(10)
-        .build();
-    if !hide_icons {
-        info_box.add(
-            &gtk::Image::builder()
-                .icon_name(&info.icon)
-                .name(style_names::PLUGIN)
-                .pixel_size(32)
-                .halign(gtk::Align::Start)
-                .valign(gtk::Align::Start)
-                .build(),
-        );
-    }
-    info_box.add(
-        &gtk::Label::builder()
-            .label(info.name.to_string())
-            .name(style_names::PLUGIN)
-            .halign(gtk::Align::End)
-            .valign(gtk::Align::Center)
-            .hexpand(true)
-            .build(),
-    );
-    // This is so that we can align the plugin name with the icon. GTK would not let it be properly aligned otherwise.
-    let main_box = gtk::Box::builder()
-        .orientation(gtk::Orientation::Vertical)
-        .name(style_names::PLUGIN)
-        .build();
-    main_box.add(&info_box);
-    main_box.add(
-        &gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .name(style_names::PLUGIN)
-            .build(),
-    );
-    main_box
-}
-
-pub fn connect_selection_events(runtime_data: Rc<RefCell<RuntimeData>>) {
-    for plugin_view in runtime_data.borrow().plugins.iter() {
-        let plugins_clone = runtime_data.borrow().plugins.clone();
-        plugin_view.list.connect_row_selected(move |list, row| {
-            if row.is_some() {
-                let combined_matches = plugins_clone
-                    .iter()
-                    .flat_map(|view| {
-                        view.list.children().into_iter().map(|child| {
-                            (
-                                child.dynamic_cast::<gtk::ListBoxRow>().unwrap(),
-                                view.list.clone(),
-                            )
-                        })
-                    })
-                    .collect::<Vec<(gtk::ListBoxRow, gtk::ListBox)>>();
-
-                for (_, _list) in combined_matches {
-                    if _list != *list {
-                        _list.select_row(None::<&gtk::ListBoxRow>);
-                    }
-                }
-            }
-        });
-    }
-}
-
-pub fn setup_entry(runtime_data: Rc<RefCell<RuntimeData>>) -> gtk::SearchEntry {
-    let entry = gtk::SearchEntry::builder()
-        .hexpand(true)
-        .name(style_names::ENTRY)
-        .build();
-    if runtime_data.borrow().config.show_results_immediately {
-        refresh_matches(String::new(), runtime_data.clone());
-    }
-    entry
-}
-
-pub fn connect_key_press_events(
-    window: Rc<impl WidgetExt + GtkWindowExt>,
-    runtime_data: Rc<RefCell<RuntimeData>>,
-    entry: Rc<impl EntryExt>,
-) {
+pub fn connect_key_press_events(window: Rc<impl WidgetExt + GtkWindowExt>) {
     window.connect_key_press_event(move |window, event| {
         use gdk::keys::constants as Key;
         match event.keyval() {
@@ -207,133 +70,32 @@ pub fn connect_key_press_events(
                 window.close();
                 glib::Propagation::Stop
             }
-            Key::Down | Key::Tab | Key::Up => {
-                handle_selection_navigation(event, runtime_data.clone());
-                glib::Propagation::Stop
-            }
-            Key::Return => {
-                handle_selection_activation(
-                    window.clone().into(),
-                    runtime_data.clone(),
-                    entry.clone(),
-                );
-                glib::Propagation::Stop
-            }
             _ => glib::Propagation::Proceed,
         }
     });
 }
 
-fn handle_selection_navigation(event: &gdk::EventKey, runtime_data: Rc<RefCell<RuntimeData>>) {
-    use gdk::keys::constants as Key;
-
-    let combined_matches = runtime_data
-        .borrow()
-        .plugins
-        .iter()
-        .flat_map(|view| {
-            view.list.children().into_iter().map(|child| {
-                (
-                    child.dynamic_cast::<gtk::ListBoxRow>().unwrap(),
-                    view.list.clone(),
-                )
-            })
-        })
-        .collect::<Vec<(gtk::ListBoxRow, gtk::ListBox)>>();
-
-    let (selected_match, selected_list) = match runtime_data
-        .borrow()
-        .plugins
-        .iter()
-        .find_map(|view| view.list.selected_row().map(|row| (row, view.list.clone())))
-    {
-        Some(selected) => selected,
-        None => {
-            if !combined_matches.is_empty() {
-                match event.keyval() {
-                    Key::Down | Key::Tab => combined_matches[0]
-                        .1
-                        .select_row(Some(&combined_matches[0].0)),
-                    Key::Up => combined_matches
-                        .last()
-                        .unwrap()
-                        .1
-                        .select_row(Some(&combined_matches.last().unwrap().0)),
-                    _ => unreachable!(),
-                }
-            }
-            return;
-        }
-    };
-
-    selected_list.select_row(None::<&gtk::ListBoxRow>);
-
-    let index = combined_matches
-        .iter()
-        .position(|(row, _list)| *row == selected_match)
-        .unwrap();
-    match event.keyval() {
-        Key::Down | Key::Tab => {
-            if index + 1 != combined_matches.len() {
-                combined_matches[index + 1]
-                    .1
-                    .select_row(Some(&combined_matches[index + 1].0));
-            } else {
-                combined_matches[0]
-                    .1
-                    .select_row(Some(&combined_matches[0].0));
-            }
-        }
-        Key::Up => {
-            if index != 0 {
-                combined_matches[index - 1]
-                    .1
-                    .select_row(Some(&combined_matches[index - 1].0));
-            } else {
-                combined_matches
-                    .last()
-                    .unwrap()
-                    .1
-                    .select_row(Some(&combined_matches.last().unwrap().0));
-            }
-        }
-        _ => unreachable!(),
-    }
-}
-
-fn handle_selection_activation(
+pub fn handle_selection_activation<F>(
+    row: impl ObjectExt,
     window: Rc<impl GtkWindowExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
-    entry: Rc<impl EntryExt>,
-) {
-    let mut _runtime_data_clone = runtime_data.borrow_mut();
+    mut on_refresh: F,
+) where
+    F: FnMut(bool),
+{
+    let rmatch = (unsafe { (*row.data::<Rc<RefCell<Match>>>("match").unwrap().as_ptr()).clone() })
+        .borrow()
+        .clone();
+    let plugin = unsafe { *row.data::<Plugin>("plugin").unwrap().as_ptr() };
 
-    let (selected_match, plugin_view) = match _runtime_data_clone
-        .plugins
-        .iter()
-        .find_map(|view| view.list.selected_row().map(|row| (row, view)))
-    {
-        Some(selected) => selected,
-        None => return,
-    };
-
-    match plugin_view.plugin.handle_selection()(unsafe {
-        (*selected_match.data::<Match>("match").unwrap().as_ptr()).clone()
-    }) {
-        HandleResult::Close => {
-            window.close();
-        }
+    match plugin.handle_selection()(rmatch) {
+        HandleResult::Close => window.close(),
         HandleResult::Refresh(exclusive) => {
-            if exclusive {
-                _runtime_data_clone.exclusive = Some(plugin_view.clone());
-            } else {
-                _runtime_data_clone.exclusive = None;
-            }
-            mem::drop(_runtime_data_clone);
-            refresh_matches(entry.text().to_string(), runtime_data.clone());
+            runtime_data.borrow_mut().exclusive = if exclusive { Some(plugin) } else { None };
+            on_refresh(exclusive);
         }
         HandleResult::Copy(bytes) => {
-            _runtime_data_clone.post_run_action = PostRunAction::Copy(bytes.into());
+            runtime_data.borrow_mut().post_run_action = PostRunAction::Copy(bytes.into());
             window.close();
         }
         HandleResult::Stdout(bytes) => {
@@ -342,7 +104,7 @@ fn handle_selection_activation(
             }
             window.close();
         }
-    }
+    };
 }
 
 pub fn handle_close_on_click(window: Rc<impl WidgetExt + GtkWindowExt>) {
@@ -370,47 +132,57 @@ pub fn setup_configure_event(
         let main_list = main_list.clone();
 
         configure_once.call_once(move || {
-            let runtime_data = runtime_data.borrow();
-
-            let width = runtime_data.config.width.to_val(event.size().0);
-            let height = runtime_data.config.height.to_val(event.size().1);
-
-            let main_vbox = gtk::Box::builder()
-                .orientation(gtk::Orientation::Vertical)
-                .halign(gtk::Align::Center)
-                .vexpand(false)
-                .width_request(width)
-                .height_request(height)
-                .name(style_names::MAIN)
-                .build();
-
-            main_vbox.add(&*entry);
-
-            if !runtime_data.error_label.is_empty() {
-                main_vbox.add(
-                    &gtk::Label::builder()
-                        .label(format!(
-                            r#"<span foreground="red">{}</span>"#,
-                            runtime_data.error_label
-                        ))
-                        .use_markup(true)
-                        .build(),
-                );
-            }
-
-            let fixed = gtk::Fixed::builder().build();
-            let x = runtime_data.config.x.to_val(event.size().0) - width / 2;
-            let y = runtime_data.config.y.to_val(event.size().1) - height / 2;
-            fixed.put(&main_vbox, x, y);
-
-            window.add(&fixed);
-            window.show_all();
-
-            main_vbox.add(&*main_list);
-            main_list.show();
-            entry.grab_focus();
+            configure_main_window(window, event, runtime_data, entry, main_list);
         });
 
         false
     });
+}
+
+fn configure_main_window(
+    window: &(impl WidgetExt + ContainerExt),
+    event: &gdk::EventConfigure,
+    runtime_data: Rc<RefCell<RuntimeData>>,
+    entry: Rc<impl WidgetExt>,
+    main_list: Rc<impl WidgetExt>,
+) {
+    let runtime_data = runtime_data.borrow();
+
+    let width = runtime_data.config.width.to_val(event.size().0);
+    let height = runtime_data.config.height.to_val(event.size().1);
+
+    let main_vbox = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .halign(gtk::Align::Center)
+        .vexpand(false)
+        .width_request(width)
+        .height_request(height)
+        .name(style_names::MAIN)
+        .build();
+
+    main_vbox.add(&*entry);
+
+    if !runtime_data.error_label.is_empty() {
+        main_vbox.add(
+            &gtk::Label::builder()
+                .label(format!(
+                    r#"<span foreground="red">{}</span>"#,
+                    runtime_data.error_label
+                ))
+                .use_markup(true)
+                .build(),
+        );
+    }
+
+    let fixed = gtk::Fixed::builder().build();
+    let x = runtime_data.config.x.to_val(event.size().0) - width / 2;
+    let y = runtime_data.config.y.to_val(event.size().1) - height / 2;
+    fixed.put(&main_vbox, x, y);
+
+    window.add(&fixed);
+    window.show_all();
+
+    main_vbox.add(&*main_list);
+    main_list.show();
+    entry.grab_focus();
 }

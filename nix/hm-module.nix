@@ -145,12 +145,6 @@ in {
         default = false;
         description = "Show search results immediately when Anyrun starts";
       };
-
-      maxEntries = mkOption {
-        type = nullOr int;
-        default = null;
-        description = "Limit amount of entries shown in total";
-      };
     };
 
     extraCss = mkOption {
@@ -235,11 +229,6 @@ in {
             hide_plugin_info: ${boolToString cfg.config.hidePluginInfo},
             close_on_click: ${boolToString cfg.config.closeOnClick},
             show_results_immediately: ${boolToString cfg.config.showResultsImmediately},
-            max_entries: ${
-            if cfg.config.maxEntries == null
-            then "None"
-            else "Some(${toString cfg.config.maxEntries})"
-          },
             plugins: ${toJSON parsedPlugins},
           )
         '';
