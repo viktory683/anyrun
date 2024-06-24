@@ -116,11 +116,6 @@ pub fn handle_matches(
         row.show_all();
 
         main_list.add(&row);
-
-        if main_list.children().len() == 1 {
-            row.set_can_default(true);
-            row.grab_default();
-        }
     });
 }
 
