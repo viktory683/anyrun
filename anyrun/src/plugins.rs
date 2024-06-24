@@ -48,7 +48,7 @@ pub fn handle_matches(
     plugin: Plugin,
     runtime_data: Rc<RefCell<RuntimeData>>,
 ) {
-    let mut first_line = true;
+    let mut first_plugin_match = true;
 
     matches.iter().for_each(|rmatch| {
         let hbox = gtk::Box::builder()
@@ -58,7 +58,7 @@ pub fn handle_matches(
         if !runtime_data.borrow().config.hide_plugin_info {
             // TODO style_name
             // TODO plugin icon?
-            let plugin_name = if first_line {
+            let plugin_name = if first_plugin_match {
                 &plugin.info()().name
             } else {
                 ""
@@ -69,7 +69,8 @@ pub fn handle_matches(
                 .sensitive(false)
                 .build();
             hbox.add(&plugin_label);
-            first_line = false;
+
+            first_plugin_match = false;
         }
 
         let match_box = gtk::Box::builder()
@@ -115,6 +116,11 @@ pub fn handle_matches(
         row.show_all();
 
         main_list.add(&row);
+
+        if main_list.children().len() == 1 {
+            row.set_can_default(true);
+            row.grab_default();
+        }
     });
 }
 
@@ -174,7 +180,7 @@ pub fn load_plugin(plugin_path: &PathBuf, runtime_data: Rc<RefCell<RuntimeData>>
 pub fn refresh_matches(
     input: &str,
     plugins: &[Plugin],
-    main_list_rc: Rc<impl ContainerExt>,
+    main_list_rc: Rc<impl ContainerExt + ListBoxExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
 ) {
     main_list_rc

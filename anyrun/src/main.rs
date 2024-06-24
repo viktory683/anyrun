@@ -92,6 +92,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         gtk::SearchEntry::builder()
             .hexpand(true)
             .name(style_names::ENTRY)
+            .activates_default(true)
             .build(),
     );
 

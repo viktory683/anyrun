@@ -164,6 +164,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
 - updated `wl-clipboard` to `0.8.1` to fix copy-paste issues
 - updated to latest version of `gtk3` with `gtk-layer-shell`
 - flat list instead of list of lists to use native navigation and activation handling (yes now it looks like Krunner)
+  - On `Enter` key with entry focus activate first match (currently without selected match highlight)
 - plugins
   - applications
     - replaced with [peppidesu's](https://github.com/peppidesu/plugin-applications.git) repo
@@ -187,3 +188,4 @@ See [Plugin_development.md](docs/Plugin_development.md)
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
   - [ ] `?` should return some common help or default usage for plugin
   - [ ] `? <plugin>` should return some plugin usage (maybe based on it's config)
+- [ ] Select first match by default as it is has default activate
