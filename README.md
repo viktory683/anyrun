@@ -47,103 +47,7 @@ build & run it:
 
 ### Nix
 
-You can use the flake:
-
-```nix
-# flake.nix
-{
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    anyrun.url = "github:anyrun-org/anyrun";
-    anyrun.inputs.nixpkgs.follows = "nixpkgs";
-  };
-
-  outputs = { self, nixpkgs, anyrun }: let
-  in {
-    nixosConfigurations.HOSTNAME = nixpkgs.lib.nixosSystem {
-      # ...
-
-      environment.systemPackages = [ anyrun.packages.${system}.anyrun ];
-
-      # ...
-    };
-  };
-}
-```
-
-The flake provides multiple packages:
-
-- anyrun (default) - just the anyrun binary
-- anyrun-with-all-plugins - anyrun and all builtin plugins
-- applications - the applications plugin
-- dictionary - the dictionary plugin
-- kidex - the kidex plugin
-- randr - the randr plugin
-- rink - the rink plugin
-- shell - the shell plugin
-- stdin - the stdin plugin
-- symbols - the symbols plugin
-- translate - the translate plugin
-- websearch - the websearch plugin
-
-#### Home-Manager module
-
-The anyrun flake exposes a Home-Manager module as `homeManagerModules.default`.
-You use it in your system like this:
-
-```nix
-{
-  programs.anyrun = {
-    enable = true;
-    config = {
-      plugins = [
-        # An array of all the plugins you want, which either can be paths to the .so files, or their packages
-        inputs.anyrun.packages.${pkgs.system}.applications
-        ./some_plugin.so
-        "${inputs.anyrun.packages.${pkgs.system}.anyrun-with-all-plugins}/lib/kidex"
-      ];
-      x = { fraction = 0.5; };
-      y = { fraction = 0.3; };
-      width = { fraction = 0.3; };
-      hideIcons = false;
-      ignoreExclusiveZones = false;
-      layer = "overlay";
-      hidePluginInfo = false;
-      closeOnClick = false;
-      showResultsImmediately = false;
-    };
-    extraCss = ''
-      .some_class {
-        background: red;
-      }
-    '';
-
-    extraConfigFiles."some-plugin.ron".text = ''
-      Config(
-        // for any other plugin
-        // this file will be put in ~/.config/anyrun/some-plugin.ron
-        // refer to docs of xdg.configFile for available options
-      )
-    '';
-  };
-}
-```
-
-You might also want to use the binary cache to avoid building locally.
-
-```nix
-nix.settings = {
-    builders-use-substitutes = true;
-    # extra substituters to add
-    extra-substituters = [
-        "https://anyrun.cachix.org"
-    ];
-
-    extra-trusted-public-keys = [
-        "anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="
-    ];
-};
-```
+See [Nix.md](docs/Nix.md)
 
 ### Manual installation
 
@@ -208,6 +112,10 @@ use them.
 
 ## Styling
 
+> **Warning**
+>
+> May be changes, not tested
+
 Anyrun supports [GTK+ CSS](https://docs.gtk.org/gtk3/css-overview.html) styling.
 The names for the different widgets and widgets associated with them are as
 follows:
@@ -246,66 +154,7 @@ screen, you would run
 
 # Plugin development
 
-The plugin API is intentionally very simple to use. This is all you need for a
-plugin:
-
-`Cargo.toml`:
-
-```toml
-#[package] omitted
-[lib]
-crate-type = ["cdylib"] # Required to build a dynamic library that can be loaded by anyrun
-
-[dependencies]
-anyrun-plugin = { git = "https://github.com/Kirottu/anyrun" }
-abi_stable = "0.11.1"
-# Any other dependencies you may have
-```
-
-`lib.rs`:
-
-```rust
-use abi_stable::std_types::{ROption, RString, RVec};
-use anyrun_plugin::*;
-
-#[init]
-fn init(config_dir: RString) {
-    // Your initialization code. This is run in another thread.
-    // The return type is the data you want to share between functions
-}
-
-#[info]
-fn info() -> PluginInfo {
-    PluginInfo {
-        name: "Demo".into(),
-        icon: "help-about".into(), // Icon from the icon theme
-    }
-}
-
-#[get_matches]
-fn get_matches(input: RString) -> RVec<Match> {
-    // The logic to get matches from the input text in the `input` argument.
-    // The `data` is a mutable reference to the shared data type later specified.
-    vec![Match {
-        title: "Test match".into(),
-        icon: ROption::RSome("help-about".into()),
-        use_pango: false,
-        description: ROption::RSome("Test match for the plugin API demo".into()),
-        id: ROption::RNone, // The ID can be used for identifying the match later, is not required
-    }]
-    .into()
-}
-
-#[handler]
-fn handler(selection: Match) -> HandleResult {
-    // Handle the selected match and return how anyrun should proceed
-    HandleResult::Close
-}
-
-```
-
-And that's it! That's all of the API needed to make runners. Refer to the
-plugins in the [plugins](plugins) folder for more examples.
+See [Plugin_development.md](docs/Plugin_development.md)
 
 # Fork comments
 
@@ -331,6 +180,9 @@ plugins in the [plugins](plugins) folder for more examples.
 
 - [ ] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
 - [ ] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
+- [ ] Up key on open should insert previous search
+  - [ ] Config option to save previous search on close and have it on open
+  - [ ] Handle properly exclusive plugin
 - [ ] Get rid of full screen window
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
   - [ ] `?` should return some common help or default usage for plugin
