@@ -23,7 +23,9 @@ pub struct Config {
     pub plugins_paths: Vec<PathBuf>,
 
     #[serde(default)]
-    pub hide_icons: bool,
+    pub hide_match_icons: bool,
+    #[serde(default)]
+    pub hide_plugins_icons: bool,
     #[serde(default)]
     pub hide_plugin_info: bool,
     #[serde(default)]
@@ -75,7 +77,8 @@ impl Default for Config {
             width: Self::default_width(),
             height: Self::default_height(),
             plugins_paths: Self::default_plugins(),
-            hide_icons: false,
+            hide_match_icons: false,
+            hide_plugins_icons: true,
             hide_plugin_info: false,
             ignore_exclusive_zones: false,
             close_on_click: false,

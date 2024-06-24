@@ -24,7 +24,9 @@ pub fn build_label(name: &str, use_markup: bool, label: &str, sensitive: bool) -
 pub fn build_image(icon: &str) -> gtk::Image {
     let mut match_image = gtk::Image::builder()
         .name(style_names::MATCH)
-        .pixel_size(32);
+        .pixel_size(32)
+        .halign(gtk::Align::Start)
+        .valign(gtk::Align::Start);
 
     let path = PathBuf::from(icon);
 
@@ -56,19 +58,33 @@ pub fn handle_matches(
             .build();
 
         if !runtime_data.borrow().config.hide_plugin_info {
-            // TODO style_name
-            // TODO plugin icon?
+            let plugin_info_box = gtk::Box::builder()
+                .orientation(gtk::Orientation::Horizontal)
+                .width_request(200)
+                .expand(false)
+                .spacing(10)
+                .sensitive(false)
+                .build();
+
+            let plugin_info = plugin.info()();
+
+            if !runtime_data.borrow().config.hide_plugins_icons && first_plugin_match {
+                let icon = build_image(&plugin_info.icon);
+                plugin_info_box.add(&icon);
+            }
+            
             let plugin_name = if first_plugin_match {
-                &plugin.info()().name
+                &plugin_info.name
             } else {
                 ""
             };
             let plugin_label = gtk::Label::builder()
+                .halign(gtk::Align::End)
                 .label(plugin_name)
-                .width_request(200)
-                .sensitive(false)
                 .build();
-            hbox.add(&plugin_label);
+            plugin_info_box.add(&plugin_label);
+
+            hbox.add(&plugin_info_box);
 
             first_plugin_match = false;
         }
@@ -78,7 +94,7 @@ pub fn handle_matches(
             .spacing(10)
             .build();
 
-        if !runtime_data.borrow().config.hide_icons {
+        if !runtime_data.borrow().config.hide_match_icons {
             if let ROption::RSome(icon) = &rmatch.icon {
                 let image = build_image(icon);
                 match_box.add(&image);
