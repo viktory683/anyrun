@@ -5,7 +5,7 @@ use anyrun_interface::{Match, PluginRef as Plugin, PollResult};
 
 use crate::config::{style_names, RuntimeData, DEFAULT_CONFIG_DIR};
 
-use gtk::{gdk_pixbuf, glib, prelude::*};
+use gtk::{glib, prelude::*};
 
 pub fn build_label(name: &str, use_markup: bool, label: &str, sensitive: bool) -> gtk::Label {
     gtk::Label::builder()
@@ -30,22 +30,16 @@ pub fn build_image(icon: &str) -> gtk::Image {
 
     let path = PathBuf::from(icon);
 
-    if path.is_absolute() {
-        match gdk_pixbuf::Pixbuf::from_file_at_size(icon, 32, 32) {
-            Ok(pixbuf) => match_image = match_image.pixbuf(&pixbuf),
-            Err(why) => {
-                eprintln!("Failed to load icon file: {}", why);
-                match_image = match_image.icon_name("image-missing");
-            }
-        }
+    match_image = if path.is_absolute() {
+        match_image.file(path.to_string_lossy())
     } else {
-        match_image = match_image.icon_name(icon);
-    }
+        match_image.icon_name(icon)
+    };
     match_image.build()
 }
 
 pub fn handle_matches(
-    main_list: Rc<impl ContainerExt>,
+    main_list: Rc<gtk::ListBox>, // WidgetExt
     matches: &[Match],
     plugin: Plugin,
     runtime_data: Rc<RefCell<RuntimeData>>,
@@ -61,7 +55,6 @@ pub fn handle_matches(
             let plugin_info_box = gtk::Box::builder()
                 .orientation(gtk::Orientation::Horizontal)
                 .width_request(200)
-                .expand(false)
                 .spacing(10)
                 .sensitive(false)
                 .build();
@@ -70,9 +63,9 @@ pub fn handle_matches(
 
             if !runtime_data.borrow().config.hide_plugins_icons && first_plugin_match {
                 let icon = build_image(&plugin_info.icon);
-                plugin_info_box.add(&icon);
+                plugin_info_box.append(&icon);
             }
-            
+
             let plugin_name = if first_plugin_match {
                 &plugin_info.name
             } else {
@@ -82,9 +75,9 @@ pub fn handle_matches(
                 .halign(gtk::Align::End)
                 .label(plugin_name)
                 .build();
-            plugin_info_box.add(&plugin_label);
+            plugin_info_box.append(&plugin_label);
 
-            hbox.add(&plugin_info_box);
+            hbox.append(&plugin_info_box);
 
             first_plugin_match = false;
         }
@@ -97,7 +90,7 @@ pub fn handle_matches(
         if !runtime_data.borrow().config.hide_match_icons {
             if let ROption::RSome(icon) = &rmatch.icon {
                 let image = build_image(icon);
-                match_box.add(&image);
+                match_box.append(&image);
             }
         }
 
@@ -113,15 +106,15 @@ pub fn handle_matches(
             &rmatch.title,
             true,
         );
-        vbox.add(&title);
+        vbox.append(&title);
 
         if let ROption::RSome(desc) = &rmatch.description {
             let desc = build_label(style_names::MATCH_DESC, rmatch.use_pango, desc, false);
-            vbox.add(&desc);
+            vbox.append(&desc);
         }
 
-        match_box.add(&vbox);
-        hbox.add(&match_box);
+        match_box.append(&vbox);
+        hbox.append(&match_box);
 
         let row = gtk::ListBoxRow::builder().height_request(32).build();
         unsafe {
@@ -129,9 +122,8 @@ pub fn handle_matches(
             row.set_data("plugin", plugin);
         }
         row.set_child(Some(&hbox));
-        row.show_all();
 
-        main_list.add(&row);
+        main_list.append(&row);
     });
 }
 
@@ -191,13 +183,12 @@ pub fn load_plugin(plugin_path: &PathBuf, runtime_data: Rc<RefCell<RuntimeData>>
 pub fn refresh_matches(
     input: &str,
     plugins: &[Plugin],
-    main_list_rc: Rc<impl ContainerExt + ListBoxExt>,
+    main_list_rc: Rc<gtk::ListBox>,
     runtime_data: Rc<RefCell<RuntimeData>>,
 ) {
-    main_list_rc
-        .children()
-        .iter()
-        .for_each(|child| main_list_rc.remove(child));
+    while let Some(child) = main_list_rc.first_child() {
+        main_list_rc.remove(&child)
+    }
 
     let handle_async_matches = |plugin: &Plugin, id: u64| {
         let plugin_clone = *plugin;

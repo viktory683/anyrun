@@ -34,12 +34,15 @@ project. Rust you can get with [rustup](https://rustup.rs). The rest are
 statically linked in the binary. Here are the libraries you need to have to
 build & run it:
 
-- `gtk-layer-shell (libgtk-layer-shell)`
-- `gtk3 (libgtk-3 libgdk-3)`
+- `gtk4-layer-shell (libgtk4-layer-shell.so)`
+- `gtk4 (libgtk-4.so)`
 - `pango (libpango-1.0)`
 - `cairo (libcairo libcairo-gobject)`
 - `gdk-pixbuf2 (libgdk_pixbuf-2.0)`
 - `glib2 (libgobject-2.0 libgio-2.0 libglib-2.0)`
+
+> [!NOTE]  
+> `gdk-pixbuf2 (libgdk_pixbuf-2.0)` maybe don't need
 
 ## Installation
 
@@ -179,8 +182,11 @@ See [Plugin_development.md](docs/Plugin_development.md)
 
 ## TODO
 
-- [ ] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
+- [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
+  - [ ] `Down` and `Up` keys should focus from entry to the list and back
+  - [ ] click to close
   - [ ] Get rid of full screen window
+  - [ ] Completion for entry
 - [ ] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
 - [ ] Up key on open should insert previous search
   - [ ] Config option to save previous search on close and have it on open

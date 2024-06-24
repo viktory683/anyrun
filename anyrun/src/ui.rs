@@ -1,4 +1,4 @@
-use std::{cell::RefCell, io, rc::Rc, sync::Once};
+use std::{cell::RefCell, fs, io, rc::Rc};
 
 use anyrun_interface::{HandleResult, Match, PluginRef as Plugin};
 use gtk::{gdk, glib, prelude::*};
@@ -47,27 +47,32 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     let config_dir = &runtime_data.borrow().config_dir;
     let css_path = format!("{}/style.css", config_dir);
 
-    if let Err(why) = provider.load_from_path(&css_path) {
-        eprintln!("Failed to load custom CSS: {}", why);
-        provider
-            .load_from_data(include_bytes!("../res/style.css"))
-            .expect("Failed to load embedded CSS data");
+    if let Ok(content) = fs::read_to_string(css_path) {
+        provider.load_from_string(&content);
+    } else {
+        provider.load_from_string(include_str!("../res/style.css"));
     }
 
-    let screen = gdk::Screen::default().expect("Failed to get GDK screen for CSS provider!");
-    gtk::StyleContext::add_provider_for_screen(
-        &screen,
+    let display = gdk::Display::default().expect("Failed to get GDK display for CSS provider!");
+    gtk::style_context_add_provider_for_display(
+        &display,
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 }
 
-pub fn connect_key_press_events(window: Rc<impl WidgetExt + GtkWindowExt>) {
-    window.connect_key_press_event(move |window, event| {
-        use gdk::keys::constants as Key;
-        match event.keyval() {
+pub fn connect_key_press_events(
+    window: Rc<impl WidgetExt + GtkWindowExt>,
+    event_controller_key: gtk::EventControllerKey,
+) {
+    window.add_controller(event_controller_key.clone());
+
+    let window_clone = window.clone();
+    event_controller_key.connect_key_pressed(move |_, keyval, _, _| {
+        use gdk::Key;
+        match keyval {
             Key::Escape => {
-                window.close();
+                window_clone.close();
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,
@@ -108,48 +113,33 @@ pub fn handle_selection_activation<F>(
 }
 
 pub fn handle_close_on_click(window: Rc<impl WidgetExt + GtkWindowExt>) {
-    window.connect_button_press_event(move |window, event| {
-        if event.window() != window.window() {
-            return glib::Propagation::Proceed;
-        }
+    todo!();
+    // window.connect_button_press_event(move |window, event| {
+    //     if event.window() != window.window() {
+    //         return glib::Propagation::Proceed;
+    //     }
 
-        window.close();
-        glib::Propagation::Stop
-    });
+    //     window.close();
+    //     glib::Propagation::Stop
+    // });
 }
 
-pub fn setup_configure_event(
-    window: Rc<impl WidgetExt + ContainerExt>,
-    runtime_data: Rc<RefCell<RuntimeData>>,
-    entry: Rc<impl WidgetExt>,
-    main_list: Rc<impl WidgetExt>,
-) {
-    let configure_once = Once::new();
-
-    window.connect_configure_event(move |window, event| {
-        let runtime_data = runtime_data.clone();
-        let entry = entry.clone();
-        let main_list = main_list.clone();
-
-        configure_once.call_once(move || {
-            configure_main_window(window, event, runtime_data, entry, main_list);
-        });
-
-        false
-    });
-}
-
-fn configure_main_window(
-    window: &(impl WidgetExt + ContainerExt),
-    event: &gdk::EventConfigure,
+pub fn configure_main_window(
+    window: Rc<impl WidgetExt + GtkWindowExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     entry: Rc<impl WidgetExt>,
     main_list: Rc<impl WidgetExt>,
 ) {
     let runtime_data = runtime_data.borrow();
 
-    let width = runtime_data.config.width.to_val(event.size().0);
-    let height = runtime_data.config.height.to_val(event.size().1);
+    let width = runtime_data
+        .config
+        .width
+        .to_val(window.width().try_into().unwrap());
+    let height = runtime_data
+        .config
+        .height
+        .to_val(window.height().try_into().unwrap());
 
     let main_vbox = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
@@ -160,10 +150,10 @@ fn configure_main_window(
         .name(style_names::MAIN)
         .build();
 
-    main_vbox.add(&*entry);
+    main_vbox.append(&*entry);
 
     if !runtime_data.error_label.is_empty() {
-        main_vbox.add(
+        main_vbox.append(
             &gtk::Label::builder()
                 .label(format!(
                     r#"<span foreground="red">{}</span>"#,
@@ -175,14 +165,15 @@ fn configure_main_window(
     }
 
     let fixed = gtk::Fixed::builder().build();
-    let x = runtime_data.config.x.to_val(event.size().0) - width / 2;
-    let y = runtime_data.config.y.to_val(event.size().1) - height / 2;
-    fixed.put(&main_vbox, x, y);
+    // TODO replace with config vars or with display size
+    let x = runtime_data.config.x.to_val(1920) - width / 2;
+    let y = runtime_data.config.y.to_val(1080) - height / 2;
 
-    window.add(&fixed);
-    window.show_all();
+    fixed.put(&main_vbox, x.into(), y.into());
 
-    main_vbox.add(&*main_list);
-    main_list.show();
+    window.set_child(Some(&fixed));
+    window.present();
+
+    main_vbox.append(&*main_list);
     entry.grab_focus();
 }

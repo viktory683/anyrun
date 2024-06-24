@@ -123,18 +123,25 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         refresh_matches("", &plugins, main_list.clone(), runtime_data.clone());
     }
 
-    connect_key_press_events(window.clone());
-    if runtime_data.borrow().config.close_on_click {
-        handle_close_on_click(window.clone());
-    }
+    let event_controller_key = gtk::EventControllerKey::new();
+    // TODO check out and read about `PropagationPhase`
+    // https://docs.gtk.org/gtk4/input-handling.html#event-propagation
+    event_controller_key.set_propagation_phase(gtk::PropagationPhase::Capture);
+    connect_key_press_events(window.clone(), event_controller_key);
 
-    setup_configure_event(
+    // // TODO
+    // if runtime_data.borrow().config.close_on_click {
+    //     handle_close_on_click(window.clone());
+    // }
+
+    configure_main_window(
         window.clone(),
         runtime_data.clone(),
         entry.clone(),
         main_list.clone(),
     );
-    window.show_all();
+
+    window.present();
 }
 
 fn setup_entry_changed(
@@ -157,7 +164,7 @@ fn setup_entry_activated(
     plugins: Vec<Plugin>,
 ) {
     entry.connect_activate(move |e| {
-        if let Some(row) = main_list.children().first() {
+        if let Some(row) = main_list.first_child() {
             handle_selection_activation(row.clone(), window.clone(), runtime_data.clone(), |_| {
                 refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone())
             })
