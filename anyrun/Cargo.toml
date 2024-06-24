@@ -7,12 +7,12 @@ edition = "2021"
 
 [dependencies]
 anyrun-macros = { path = "../anyrun-macros" }
-abi_stable = "0.11.1"
-gtk = { version = "0.8.2", package = "gtk4", features = ["v4_14"] }
+abi_stable = "0.11.3"
+gtk = { version = "0.8.2", package = "gtk4" }
 gtk-layer-shell = { version = "0.3.0", package = "gtk4-layer-shell" }
-ron = "0.8.0"
-serde = { version = "1.0.151", features = ["derive"] }
+ron = "0.8.1"
+serde = { version = "1.0.203", features = ["derive"] }
 anyrun-interface = { path = "../anyrun-interface" }
 wl-clipboard-rs = "0.8.1"
-nix = { version = "0.26.1", default-features = false, features = ["process"] }
-clap = { version = "4.2.7", features = ["derive"] }
+nix = { version = "0.29.0", default-features = false, features = ["process"] }
+clap = { version = "4.5.7", features = ["derive"] }

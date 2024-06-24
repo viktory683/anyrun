@@ -47,10 +47,10 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     let config_dir = &runtime_data.borrow().config_dir;
     let css_path = format!("{}/style.css", config_dir);
 
-    if let Ok(content) = fs::read_to_string(css_path) {
-        provider.load_from_string(&content);
+    if fs::metadata(&css_path).is_ok() {
+        provider.load_from_path(css_path);
     } else {
-        provider.load_from_string(include_str!("../res/style.css"));
+        provider.load_from_path("../res/style.css");
     }
 
     let display = gdk::Display::default().expect("Failed to get GDK display for CSS provider!");
@@ -110,18 +110,6 @@ pub fn handle_selection_activation<F>(
             window.close();
         }
     };
-}
-
-pub fn handle_close_on_click(window: Rc<impl WidgetExt + GtkWindowExt>) {
-    todo!();
-    // window.connect_button_press_event(move |window, event| {
-    //     if event.window() != window.window() {
-    //         return glib::Propagation::Proceed;
-    //     }
-
-    //     window.close();
-    //     glib::Propagation::Stop
-    // });
 }
 
 pub fn configure_main_window(

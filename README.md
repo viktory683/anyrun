@@ -25,6 +25,11 @@ check out [fork comments](#fork-comments)
   - GTK layer shell for overlaying the window
   - data-control for managing the clipboard
 
+# Screenshots
+
+![screenshot](screenshots/screenshot.png)
+![screenshot](screenshots/with_icons.png)
+
 # Usage
 
 ## Dependencies
@@ -41,7 +46,7 @@ build & run it:
 - `gdk-pixbuf2 (libgdk_pixbuf-2.0)`
 - `glib2 (libgobject-2.0 libgio-2.0 libglib-2.0)`
 
-> [!NOTE]  
+> [!NOTE]
 > `gdk-pixbuf2 (libgdk_pixbuf-2.0)` maybe don't need
 
 ## Installation
@@ -115,7 +120,7 @@ use them.
 
 ## Styling
 
-> :warning: **Warning**
+> [!WARNING]
 >
 > May be changes, not tested
 
@@ -195,3 +200,4 @@ See [Plugin_development.md](docs/Plugin_development.md)
   - [ ] `?` should return some common help or default usage for plugin
   - [ ] `? <plugin>` should return some plugin usage (maybe based on it's config)
 - [ ] Select first match by default as it is has default activate
+- [ ] `ci: Security audit` fails up because of `generational-arena` crate as it's unmaintaned. Need to move to something more alive

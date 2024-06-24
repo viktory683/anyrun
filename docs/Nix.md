@@ -1,6 +1,6 @@
 # Nix
 
-> :warning: **Warning**
+> [!WARNING]
 >
 > Nix was not tested and probably will now work
 > 

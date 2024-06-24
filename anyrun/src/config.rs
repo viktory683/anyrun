@@ -31,8 +31,6 @@ pub struct Config {
     #[serde(default)]
     pub ignore_exclusive_zones: bool,
     #[serde(default)]
-    pub close_on_click: bool,
-    #[serde(default)]
     pub show_results_immediately: bool,
     #[serde(default = "Config::default_layer")]
     pub layer: Layer,
@@ -81,7 +79,7 @@ impl Default for Config {
             hide_plugins_icons: true,
             hide_plugin_info: false,
             ignore_exclusive_zones: false,
-            close_on_click: false,
+            // close_on_click: false,
             show_results_immediately: false,
             layer: Self::default_layer(),
         }
