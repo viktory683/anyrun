@@ -6,7 +6,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyrun_interface::PluginRef as Plugin;
 use clap::Parser;
-use gtk::{gio, prelude::*};
+use gtk::{gio, glib, prelude::*};
 use nix::unistd;
 
 use config::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
@@ -14,13 +14,14 @@ use plugins::{load_plugin, refresh_matches};
 use ui::*;
 use wl_clipboard_rs::copy;
 
-fn main() {
+fn main() -> Result<glib::ExitCode, glib::Error> {
+    gtk::init().expect("Failed to initialize GTK.");
+
     let app = gtk::Application::new(Some("com.kirottu.anyrun"), Default::default());
-    app.register(gio::Cancellable::NONE)
-        .expect("Failed to register application");
+    app.register(gio::Cancellable::NONE)?;
 
     if app.is_remote() {
-        return;
+        return Ok(glib::ExitCode::SUCCESS);
     }
 
     let args = Args::parse();
@@ -37,9 +38,11 @@ fn main() {
 
     let runtime_data_clone = runtime_data.clone();
     app.connect_activate(move |app| activate(app, runtime_data_clone.clone()));
-    app.run_with_args::<String>(&[]);
+    let exit_code = app.run_with_args::<String>(&[]);
 
     handle_post_run_action(runtime_data);
+
+    Ok(exit_code)
 }
 
 fn handle_post_run_action(runtime_data: Rc<RefCell<RuntimeData>>) {
