@@ -112,7 +112,7 @@ use them.
 
 ## Styling
 
-> **Warning**
+> :warning: **Warning**
 >
 > May be changes, not tested
 
