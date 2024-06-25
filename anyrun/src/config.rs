@@ -7,12 +7,11 @@ use std::{env, fs, path::PathBuf};
 #[anyrun_macros::config_args]
 #[derive(Deserialize)]
 pub struct Config {
-    #[serde(default = "Config::default_x")]
-    pub x: RelativeNum,
+    // #[serde(default = "Config::default_x")]
+    // pub x: RelativeNum,
 
-    #[serde(default = "Config::default_y")]
-    pub y: RelativeNum,
-
+    // #[serde(default = "Config::default_y")]
+    // pub y: RelativeNum,
     #[serde(default = "Config::default_width")]
     pub width: RelativeNum,
 
@@ -37,13 +36,13 @@ pub struct Config {
 }
 
 impl Config {
-    fn default_x() -> RelativeNum {
-        RelativeNum::Fraction(0.5)
-    }
+    // fn default_x() -> RelativeNum {
+    //     RelativeNum::Fraction(0.5)
+    // }
 
-    fn default_y() -> RelativeNum {
-        RelativeNum::Absolute(0)
-    }
+    // fn default_y() -> RelativeNum {
+    //     RelativeNum::Absolute(0)
+    // }
 
     fn default_width() -> RelativeNum {
         RelativeNum::Fraction(0.5)
@@ -70,8 +69,8 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            x: Self::default_x(),
-            y: Self::default_y(),
+            // x: Self::default_x(),
+            // y: Self::default_y(),
             width: Self::default_width(),
             height: Self::default_height(),
             plugins: Self::default_plugins(),

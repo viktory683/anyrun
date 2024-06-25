@@ -120,6 +120,10 @@ use them.
 
 ## Styling
 
+> [!NOTE]
+>
+> Currently with `ScrolledWindow` you can leave all styles empty/comment all out/remove file (will throw Gtk-WARNING but it's ok)/etc
+
 > [!WARNING]
 >
 > May be changes, not tested
@@ -170,7 +174,9 @@ See [Plugin_development.md](docs/Plugin_development.md)
 
 - plugins as git submodules
 - updated `wl-clipboard` to `0.8.1` to fix copy-paste issues
-- updated to latest version of `gtk3` with `gtk-layer-shell`
+- updated to latest version of `gtk4` with `gtk4-layer-shell`
+  - Get rid of fulscreen window
+  - Scrollable matches
 - flat list instead of list of lists to use native navigation and activation handling (yes now it looks like Krunner)
   - On `Enter` key with entry focus activate first match (currently without selected match highlight)
 - plugins
@@ -188,12 +194,15 @@ See [Plugin_development.md](docs/Plugin_development.md)
 ## TODO
 
 - [ ] Seems like that somehing like `--plugins libstdin.so` don't work as expected
+  - [ ] If anyrun launched in something like sigle-plugin mode then plugin can request to hide entry or something else... Maybe it can request changing window placement, or specify custom in it's own config (for power-menu or whatever)
 - [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
   - [ ] `Down` and `Up` keys should focus from entry to the list and back
   - [ ] click to close
-  - [ ] Get rid of full screen window
+  - [x] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
+    - [x] Get rid of full screen window
+      - [ ] Anchors from config
+    - [ ] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
-- [ ] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
 - [ ] Up key on open should insert previous search
   - [ ] Config option to save previous search on close and have it on open
   - [ ] Handle properly exclusive plugin

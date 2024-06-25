@@ -23,14 +23,16 @@ pub fn setup_main_window(
 fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<RuntimeData>>) {
     window.init_layer_shell();
 
-    for edge in &[
-        gtk_layer_shell::Edge::Top,
-        gtk_layer_shell::Edge::Bottom,
-        gtk_layer_shell::Edge::Left,
-        gtk_layer_shell::Edge::Right,
-    ] {
-        window.set_anchor(*edge, true);
-    }
+    // // TODO move to config
+    // for edge in [
+    //     gtk_layer_shell::Edge::Top,
+    //     gtk_layer_shell::Edge::Bottom,
+    //     gtk_layer_shell::Edge::Left,
+    //     gtk_layer_shell::Edge::Right,
+    // ] {
+    //     window.set_anchor(edge, true);
+    // }
+    window.set_anchor(gtk_layer_shell::Edge::Top, true);
 
     window.set_namespace("anyrun");
 
@@ -152,16 +154,17 @@ pub fn configure_main_window(
         );
     }
 
-    let fixed = gtk::Fixed::builder().build();
-    // TODO replace with config vars or with display size
-    let x = runtime_data.config.x.to_val(1920) - width / 2;
-    let y = runtime_data.config.y.to_val(1080) - height / 2;
+    // TODO window needs to be resized on `refresh_matches` if it fits `max_content_height`
+    let scroll_window = gtk::ScrolledWindow::builder()
+        .min_content_width(200)
+        .min_content_height(200)
+        .max_content_height(800)
+        .focusable(false)
+        .build();
 
-    fixed.put(&main_vbox, x.into(), y.into());
-
-    window.set_child(Some(&fixed));
+    scroll_window.set_child(Some(&*main_list));
+    main_vbox.append(&scroll_window);
+    window.set_child(Some(&main_vbox));
     window.present();
-
-    main_vbox.append(&*main_list);
     entry.grab_focus();
 }
