@@ -51,6 +51,14 @@ build & run it:
 
 ## Installation
 
+> [!NOTE]
+>
+> As long as this is fork and I'm writing it mostly for myself
+> 
+> it's not packaged at all (packaging stats here is about original project)
+> 
+> If you really want to use this fork so better [build it](#manual-installation)
+
 [![Packaging status](https://repology.org/badge/vertical-allrepos/anyrun.svg)](https://repology.org/project/anyrun/versions)
 
 ### Nix
