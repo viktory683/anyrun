@@ -187,6 +187,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
 
 ## TODO
 
+- [ ] Seems like that somehing like `--plugins libstdin.so` don't work as expected
 - [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
   - [ ] `Down` and `Up` keys should focus from entry to the list and back
   - [ ] click to close

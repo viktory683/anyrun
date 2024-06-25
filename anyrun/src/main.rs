@@ -84,7 +84,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
     let plugins: Vec<_> = runtime_data
         .borrow()
         .config
-        .plugins_paths
+        .plugins
         .iter()
         .map(|filename| load_plugin(filename, runtime_data.clone()))
         .collect();

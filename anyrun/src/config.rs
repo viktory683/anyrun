@@ -19,8 +19,8 @@ pub struct Config {
     #[serde(default = "Config::default_height")]
     pub height: RelativeNum,
 
-    #[serde(default = "Config::default_plugins", alias = "plugins")]
-    pub plugins_paths: Vec<PathBuf>,
+    #[serde(default = "Config::default_plugins")]
+    pub plugins: Vec<PathBuf>,
 
     #[serde(default)]
     pub hide_match_icons: bool,
@@ -74,7 +74,7 @@ impl Default for Config {
             y: Self::default_y(),
             width: Self::default_width(),
             height: Self::default_height(),
-            plugins_paths: Self::default_plugins(),
+            plugins: Self::default_plugins(),
             hide_match_icons: false,
             hide_plugins_icons: true,
             hide_plugin_info: false,
