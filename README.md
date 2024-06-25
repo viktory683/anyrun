@@ -200,7 +200,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
   - [ ] click to close
   - [x] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
     - [x] Get rid of full screen window
-      - [ ] Anchors from config
+      - [x] Anchors from config
     - [ ] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
 - [ ] Up key on open should insert previous search

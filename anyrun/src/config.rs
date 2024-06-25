@@ -18,6 +18,9 @@ pub struct Config {
     #[serde(default = "Config::default_height")]
     pub height: RelativeNum,
 
+    #[serde(default = "Config::default_edges")]
+    pub edges: Vec<Edge>,
+
     #[serde(default = "Config::default_plugins")]
     pub plugins: Vec<PathBuf>,
 
@@ -31,7 +34,7 @@ pub struct Config {
     pub ignore_exclusive_zones: bool,
     #[serde(default)]
     pub show_results_immediately: bool,
-    #[serde(default = "Config::default_layer")]
+    #[serde(default)]
     pub layer: Layer,
 }
 
@@ -52,6 +55,10 @@ impl Config {
         RelativeNum::Absolute(0)
     }
 
+    fn default_edges() -> Vec<Edge> {
+        vec![Edge::Top]
+    }
+
     fn default_plugins() -> Vec<PathBuf> {
         vec![
             "libapplications.so".into(),
@@ -59,10 +66,6 @@ impl Config {
             "libshell.so".into(),
             "libtranslate.so".into(),
         ]
-    }
-
-    fn default_layer() -> Layer {
-        Layer::Overlay
     }
 }
 
@@ -73,6 +76,7 @@ impl Default for Config {
             // y: Self::default_y(),
             width: Self::default_width(),
             height: Self::default_height(),
+            edges: Self::default_edges(),
             plugins: Self::default_plugins(),
             hide_match_icons: false,
             hide_plugins_icons: true,
@@ -80,7 +84,26 @@ impl Default for Config {
             ignore_exclusive_zones: false,
             // close_on_click: false,
             show_results_immediately: false,
-            layer: Self::default_layer(),
+            layer: Layer::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, ValueEnum)]
+pub enum Edge {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+impl From<Edge> for gtk_layer_shell::Edge {
+    fn from(val: Edge) -> Self {
+        match val {
+            Edge::Left => gtk_layer_shell::Edge::Left,
+            Edge::Right => gtk_layer_shell::Edge::Right,
+            Edge::Top => gtk_layer_shell::Edge::Top,
+            Edge::Bottom => gtk_layer_shell::Edge::Bottom,
         }
     }
 }
@@ -94,14 +117,20 @@ pub enum Layer {
     Overlay,
 }
 
-impl Layer {
-    pub fn to_g_layer(&self) -> gtk_layer_shell::Layer {
-        match self {
+impl From<Layer> for gtk_layer_shell::Layer {
+    fn from(val: Layer) -> Self {
+        match val {
             Layer::Background => gtk_layer_shell::Layer::Background,
             Layer::Bottom => gtk_layer_shell::Layer::Bottom,
             Layer::Top => gtk_layer_shell::Layer::Top,
             Layer::Overlay => gtk_layer_shell::Layer::Overlay,
         }
+    }
+}
+
+impl Default for Layer {
+    fn default() -> Self {
+        Self::Overlay
     }
 }
 

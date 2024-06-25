@@ -23,16 +23,15 @@ pub fn setup_main_window(
 fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<RuntimeData>>) {
     window.init_layer_shell();
 
-    // // TODO move to config
-    // for edge in [
-    //     gtk_layer_shell::Edge::Top,
-    //     gtk_layer_shell::Edge::Bottom,
-    //     gtk_layer_shell::Edge::Left,
-    //     gtk_layer_shell::Edge::Right,
-    // ] {
-    //     window.set_anchor(edge, true);
-    // }
-    window.set_anchor(gtk_layer_shell::Edge::Top, true);
+    runtime_data
+        .borrow()
+        .config
+        .edges
+        .clone()
+        .into_iter()
+        .for_each(|edge| {
+            window.set_anchor(edge.into(), true);
+        });
 
     window.set_namespace("anyrun");
 
@@ -41,7 +40,7 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
     }
 
     window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::Exclusive);
-    window.set_layer(runtime_data.borrow().config.layer.to_g_layer());
+    window.set_layer(runtime_data.borrow().config.layer.clone().into());
 }
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {

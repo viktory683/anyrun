@@ -4,16 +4,21 @@ Config(
     // Fraction(n): A fraction of the width or height of the full screen (depends on exclusive zones and the settings related to them) window respectively
 
     // The horizontal position, adjusted so that Relative(0.5) always centers the runner
-    x: Fraction(0.5),
+    // x: Fraction(0.5),  // Currently unused
 
     // The vertical position, works the same as `x`
-    y: Absolute(0),
+    // y: Absolute(0),  // Currently unused
 
     // The width of the runner
     width: Absolute(800),
 
     // The minimum height of the runner, the runner will expand to fit all the entries
     height: Absolute(0),
+
+    // Array of edges where to anchor window. Window will be stretched if two opposite edges specifyed
+    // Possible values: Left, Right, Top, Bottom
+    // Default: [Top]
+    edges: [Top],
 
     // ignore exclusive zones, f.e. Waybar  
     ignore_exclusive_zones: false, 
