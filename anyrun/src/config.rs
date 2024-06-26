@@ -21,6 +21,9 @@ pub struct Config {
     #[serde(default = "Config::default_edges")]
     pub edges: Vec<Edge>,
 
+    #[serde(default)]
+    pub margin: Vec<i32>,
+
     #[serde(default = "Config::default_plugins")]
     pub plugins: Vec<PathBuf>,
 
@@ -77,6 +80,7 @@ impl Default for Config {
             width: Self::default_width(),
             height: Self::default_height(),
             edges: Self::default_edges(),
+            margin: Vec::default(),
             plugins: Self::default_plugins(),
             hide_match_icons: false,
             hide_plugins_icons: true,

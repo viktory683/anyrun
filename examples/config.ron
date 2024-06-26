@@ -3,12 +3,6 @@ Config(
     // Absolute(n): The absolute value in pixels
     // Fraction(n): A fraction of the width or height of the full screen (depends on exclusive zones and the settings related to them) window respectively
 
-    // The horizontal position, adjusted so that Relative(0.5) always centers the runner
-    // x: Fraction(0.5),  // Currently unused
-
-    // The vertical position, works the same as `x`
-    // y: Absolute(0),  // Currently unused
-
     // The width of the runner
     width: Absolute(800),
 
@@ -19,6 +13,18 @@ Config(
     // Possible values: Left, Right, Top, Bottom
     // Default: [Top]
     edges: [Top],
+
+    // Array[i32] of margins for edges
+    // Place it in order you specifyed `edges`
+    //
+    // Example:
+    //     edges: [Bottom, Left],
+    //     margin: [10, 20],
+    // from the bottom there will be margin 10
+    // from the left there will be margin 20
+    // 
+    // Default: [] // (empty array so no margins)
+    margin: [],
 
     // ignore exclusive zones, f.e. Waybar  
     ignore_exclusive_zones: false, 

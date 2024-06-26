@@ -29,8 +29,14 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
         .edges
         .clone()
         .into_iter()
-        .for_each(|edge| {
+        .enumerate()
+        .for_each(|(i, edge)| {
             window.set_anchor(edge.into(), true);
+
+            window.set_margin(
+                edge.into(),
+                *runtime_data.borrow().config.margin.get(i).unwrap_or(&0),
+            );
         });
 
     window.set_namespace("anyrun");

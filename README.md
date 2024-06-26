@@ -205,10 +205,13 @@ See [Plugin_development.md](docs/Plugin_development.md)
   - [ ] If anyrun launched in something like sigle-plugin mode then plugin can request to hide entry or something else... Maybe it can request changing window placement, or specify custom in it's own config (for power-menu or whatever)
 - [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
   - [x] `Down` and `Up` keys should focus from entry to the list and back
-  - [ ] click to close
+  - [x] click to close (seems it will not work [comments](#todo-comments))
   - [x] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
     - [x] Get rid of full screen window
       - [x] Anchors from config
+      - [x] Margins from config (like there was `x` and `y` options)
+        - [ ] Use RealtiveNum instead
+      - [ ] Option to place entry down if window is anchored to the bottom
     - [ ] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
 - [ ] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
@@ -220,3 +223,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
 - [x] Select first match by default as it is has default activate
 - [ ] Add something like daemon mode to make launch faster. Instead of loading all libs and stuff every time we need just open/hide window using daemon
 - [ ] `ci: Security audit` fails up because of `generational-arena` crate as it's unmaintaned. Need to move to something more alive
+
+### TODO-comments
+
+- click on close outside window seems to be impossible with wayland if not to fake by creating transparent fullscreen window. Hope it will be some kind reworked in future releases of Wayland+GTK. I hope I'm wrong about this and just couldn't find the correct information. (help is welcome)
