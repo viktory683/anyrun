@@ -201,7 +201,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
 
 ## TODO
 
-- [ ] Seems like that somehing like `--plugins libstdin.so` don't work as expected
+- [x] Seems like that somehing like `--plugins libstdin.so` don't work as expected
   - [ ] If anyrun launched in something like sigle-plugin mode then plugin can request to hide entry or something else... Maybe it can request changing window placement, or specify custom in it's own config (for power-menu or whatever)
 - [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
   - [ ] `Down` and `Up` keys should focus from entry to the list and back

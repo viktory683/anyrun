@@ -153,11 +153,11 @@ dependencies = [
 
 [[package]]
 name = "anyrun"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "abi_stable",
  "anyrun-interface 0.1.0",
- "anyrun-macros 0.1.0",
+ "anyrun-macros 0.1.1",
  "clap",
  "gtk4",
  "gtk4-layer-shell",
@@ -186,6 +186,8 @@ dependencies = [
 [[package]]
 name = "anyrun-macros"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c910a59fc096407041f5d1afc61132106e38868d1feea27e52f1045ee1e6c16"
 dependencies = [
  "quote",
  "syn 2.0.68",
@@ -193,9 +195,7 @@ dependencies = [
 
 [[package]]
 name = "anyrun-macros"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c910a59fc096407041f5d1afc61132106e38868d1feea27e52f1045ee1e6c16"
+version = "0.1.1"
 dependencies = [
  "quote",
  "syn 2.0.68",
@@ -207,7 +207,7 @@ version = "0.1.0"
 dependencies = [
  "abi_stable",
  "anyrun-interface 0.1.0",
- "anyrun-macros 0.1.0",
+ "anyrun-macros 0.1.1",
 ]
 
 [[package]]
@@ -218,7 +218,7 @@ checksum = "812c7d893370d269754d733d768f8fb2eb42934925e5174261b6d44e716b5792"
 dependencies = [
  "abi_stable",
  "anyrun-interface 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "anyrun-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyrun-macros 0.1.0",
 ]
 
 [[package]]

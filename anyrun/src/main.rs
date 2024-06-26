@@ -26,7 +26,8 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
 
     let args = Args::parse();
     let config_dir = determine_config_dir(&args.config_dir);
-    let (config, error_label) = load_config(&config_dir);
+    let (mut config, error_label) = load_config(&config_dir);
+    config.merge_opt(args.config);
 
     let runtime_data = Rc::new(RefCell::new(RuntimeData {
         exclusive: None,

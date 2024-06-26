@@ -175,7 +175,7 @@ pub struct Args {
     #[arg(short, long)]
     pub config_dir: Option<String>,
     #[command(flatten)]
-    config: ConfigArgs,
+    pub config: ConfigArgs,
 }
 
 // Enum for positions

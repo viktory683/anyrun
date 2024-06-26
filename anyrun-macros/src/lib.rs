@@ -243,7 +243,7 @@ pub fn config_args(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #opt_item
 
         impl #ident {
-            fn merge_opt(&mut self, opt: #opt_ident) {
+            pub fn merge_opt(&mut self, opt: #opt_ident) {
                 #operations
             }
         }
