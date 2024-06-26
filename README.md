@@ -204,14 +204,14 @@ See [Plugin_development.md](docs/Plugin_development.md)
 - [x] Seems like that somehing like `--plugins libstdin.so` don't work as expected
   - [ ] If anyrun launched in something like sigle-plugin mode then plugin can request to hide entry or something else... Maybe it can request changing window placement, or specify custom in it's own config (for power-menu or whatever)
 - [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
-  - [ ] `Down` and `Up` keys should focus from entry to the list and back
+  - [x] `Down` and `Up` keys should focus from entry to the list and back
   - [ ] click to close
   - [x] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
     - [x] Get rid of full screen window
       - [x] Anchors from config
     - [ ] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
-- [ ] Up key on open should insert previous search
+- [ ] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
   - [ ] Config option to save previous search on close and have it on open
   - [ ] Handle properly exclusive plugin
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)

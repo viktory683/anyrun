@@ -92,12 +92,19 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
 
     let window = Rc::new(setup_main_window(app, runtime_data.clone()));
 
+    let window_eck = gtk::EventControllerKey::new();
+    connect_window_key_press_events(window.clone(), window_eck);
+
     let entry = Rc::new(
         gtk::SearchEntry::builder()
             .hexpand(true)
             .name(style_names::ENTRY)
             .build(),
     );
+
+    let entry_eck = gtk::EventControllerKey::new();
+    connect_entry_key_press_events(entry.clone(), entry_eck, window.clone());
+
     setup_entry_changed(
         entry.clone(),
         runtime_data.clone(),
@@ -123,12 +130,6 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
     if runtime_data.borrow().config.show_results_immediately {
         refresh_matches("", &plugins, main_list.clone(), runtime_data.clone());
     }
-
-    let event_controller_key = gtk::EventControllerKey::new();
-    // TODO check out and read about `PropagationPhase`
-    // https://docs.gtk.org/gtk4/input-handling.html#event-propagation
-    event_controller_key.set_propagation_phase(gtk::PropagationPhase::Capture);
-    connect_key_press_events(window.clone(), event_controller_key);
 
     // // TODO
     // if runtime_data.borrow().config.close_on_click {
@@ -165,7 +166,7 @@ fn setup_entry_activated(
     plugins: Vec<Plugin>,
 ) {
     entry.connect_activate(move |e| {
-        if let Some(row) = main_list.first_child() {
+        if let Some(row) = main_list.selected_row() {
             handle_selection_activation(row.clone(), window.clone(), runtime_data.clone(), |_| {
                 refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone())
             })

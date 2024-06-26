@@ -62,7 +62,7 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     );
 }
 
-pub fn connect_key_press_events(
+pub fn connect_window_key_press_events(
     window: Rc<impl WidgetExt + GtkWindowExt>,
     event_controller_key: gtk::EventControllerKey,
 ) {
@@ -75,6 +75,35 @@ pub fn connect_key_press_events(
             Key::Escape => {
                 window_clone.close();
                 glib::Propagation::Stop
+            }
+            _ => glib::Propagation::Proceed,
+        }
+    });
+}
+
+pub fn connect_entry_key_press_events(
+    widget: Rc<impl WidgetExt>,
+    event_controller_key: gtk::EventControllerKey,
+    window: Rc<impl GtkWindowExt>,
+) {
+    widget.add_controller(event_controller_key.clone());
+
+    let window_clone = window.clone();
+    event_controller_key.connect_key_pressed(move |_, keyval, _, _| {
+        use gdk::Key;
+        match keyval {
+            Key::Escape => {
+                window_clone.close();
+                glib::Propagation::Stop
+            }
+            Key::Down | Key::Up => {
+                widget.emit_move_focus(if keyval == Key::Down {
+                    gtk::DirectionType::TabForward
+                } else {
+                    gtk::DirectionType::TabBackward
+                });
+
+                glib::Propagation::Proceed
             }
             _ => glib::Propagation::Proceed,
         }
