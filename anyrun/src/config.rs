@@ -22,7 +22,7 @@ pub struct Config {
     pub edges: Vec<Edge>,
 
     #[serde(default)]
-    pub margin: Vec<i32>,
+    pub margin: Vec<RelativeNum>,
 
     #[serde(default = "Config::default_plugins")]
     pub plugins: Vec<PathBuf>,
@@ -113,7 +113,7 @@ impl From<Edge> for gtk_layer_shell::Edge {
 }
 
 // Layer enum and its implementation
-#[derive(Deserialize, Clone, ValueEnum)]
+#[derive(Deserialize, Clone, Copy, ValueEnum)]
 pub enum Layer {
     Background,
     Bottom,
@@ -139,7 +139,7 @@ impl Default for Layer {
 }
 
 // RelativeNum enum and its implementation
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Copy)]
 pub enum RelativeNum {
     Absolute(i32),
     Fraction(f32),
@@ -152,9 +152,9 @@ impl Default for RelativeNum {
 }
 
 impl RelativeNum {
-    pub fn to_val(&self, val: u32) -> i32 {
+    pub fn to_val(self, val: u32) -> i32 {
         match self {
-            RelativeNum::Absolute(num) => *num,
+            RelativeNum::Absolute(num) => num,
             RelativeNum::Fraction(frac) => (frac * val as f32) as i32,
         }
     }
@@ -183,7 +183,7 @@ pub struct Args {
 }
 
 // Enum for positions
-#[derive(Deserialize, Clone, ValueEnum)]
+#[derive(Deserialize, Clone, Copy, ValueEnum)]
 enum Position {
     Top,
     Center,

@@ -4,7 +4,7 @@ use anyrun_interface::{HandleResult, Match, PluginRef as Plugin};
 use gtk::{gdk, glib, prelude::*};
 use gtk_layer_shell::LayerShell;
 
-use crate::config::{style_names, PostRunAction, RuntimeData};
+use crate::config::{style_names, Edge, PostRunAction, RelativeNum, RuntimeData};
 
 pub fn setup_main_window(
     app: &impl IsA<gtk::Application>,
@@ -33,9 +33,31 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
         .for_each(|(i, edge)| {
             window.set_anchor(edge.into(), true);
 
+            let geometry = gdk::Display::default()
+                .expect("No display found")
+                .monitors()
+                .into_iter()
+                .filter_map(|m| m.ok())
+                .peekable()
+                .peek()
+                .expect("No monitor found")
+                .clone()
+                .downcast::<gdk::Monitor>()
+                .expect("Can't downcast Object to Monitor")
+                .geometry();
+
             window.set_margin(
                 edge.into(),
-                *runtime_data.borrow().config.margin.get(i).unwrap_or(&0),
+                runtime_data
+                    .borrow()
+                    .config
+                    .margin
+                    .get(i)
+                    .unwrap_or(&RelativeNum::default())
+                    .to_val(match edge {
+                        Edge::Left | Edge::Right => geometry.width().try_into().unwrap(),
+                        Edge::Top | Edge::Bottom => geometry.height().try_into().unwrap(),
+                    }),
             );
         });
 
@@ -46,7 +68,7 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
     }
 
     window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::Exclusive);
-    window.set_layer(runtime_data.borrow().config.layer.clone().into());
+    window.set_layer(runtime_data.borrow().config.layer.into());
 }
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
@@ -190,9 +212,11 @@ pub fn configure_main_window(
 
     // TODO window needs to be resized on `refresh_matches` if it fits `max_content_height`
     let scroll_window = gtk::ScrolledWindow::builder()
-        .min_content_width(200)
-        .min_content_height(200)
-        .max_content_height(800)
+        // .min_content_width(200)
+        .min_content_height(400)
+        // .max_content_height(800)
+        .vexpand(true)
+        .hexpand(true)
         .focusable(false)
         .build();
 
