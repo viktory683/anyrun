@@ -77,7 +77,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
 
     let main_list = Rc::new(
         gtk::ListBox::builder()
-            .selection_mode(gtk::SelectionMode::None)
+            .selection_mode(gtk::SelectionMode::Single)
             .name(style_names::MAIN)
             .build(),
     );

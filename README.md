@@ -217,6 +217,6 @@ See [Plugin_development.md](docs/Plugin_development.md)
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
   - [ ] `?` should return some common help or default usage for plugin
   - [ ] `? <plugin>` should return some plugin usage (maybe based on it's config)
-- [ ] Select first match by default as it is has default activate
+- [x] Select first match by default as it is has default activate
 - [ ] Add something like daemon mode to make launch faster. Instead of loading all libs and stuff every time we need just open/hide window using daemon
 - [ ] `ci: Security audit` fails up because of `generational-arena` crate as it's unmaintaned. Need to move to something more alive

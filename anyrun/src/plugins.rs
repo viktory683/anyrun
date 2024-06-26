@@ -125,6 +125,10 @@ pub fn handle_matches(
 
         main_list.append(&row);
     });
+
+    if main_list.selected_row().is_none() {
+        main_list.select_row(main_list.row_at_index(0).as_ref());
+    }
 }
 
 /// Loads a plugin from the specified path or from the provided directories if the path is not absolute.
