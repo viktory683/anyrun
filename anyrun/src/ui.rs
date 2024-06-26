@@ -33,18 +33,7 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
         .for_each(|(i, edge)| {
             window.set_anchor(edge.into(), true);
 
-            let geometry = gdk::Display::default()
-                .expect("No display found")
-                .monitors()
-                .into_iter()
-                .filter_map(|m| m.ok())
-                .peekable()
-                .peek()
-                .expect("No monitor found")
-                .clone()
-                .downcast::<gdk::Monitor>()
-                .expect("Can't downcast Object to Monitor")
-                .geometry();
+            let geometry = runtime_data.borrow().geometry;
 
             window.set_margin(
                 edge.into(),

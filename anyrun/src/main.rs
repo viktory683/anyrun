@@ -6,7 +6,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyrun_interface::PluginRef as Plugin;
 use clap::Parser;
-use gtk::{gio, glib, prelude::*};
+use gtk::{gdk, gio, glib, prelude::*};
 use nix::unistd;
 
 use config::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
@@ -29,12 +29,26 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
     let (mut config, error_label) = load_config(&config_dir);
     config.merge_opt(args.config);
 
+    let geometry = gdk::Display::default()
+        .expect("No display found")
+        .monitors()
+        .into_iter()
+        .filter_map(|m| m.ok())
+        .peekable()
+        .peek()
+        .expect("No monitor found")
+        .clone()
+        .downcast::<gdk::Monitor>()
+        .expect("Can't downcast Object to Monitor")
+        .geometry();
+
     let runtime_data = Rc::new(RefCell::new(RuntimeData {
         exclusive: None,
         post_run_action: PostRunAction::None,
         config,
         error_label,
         config_dir,
+        geometry,
     }));
 
     let runtime_data_clone = runtime_data.clone();

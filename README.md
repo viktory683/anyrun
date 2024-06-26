@@ -212,7 +212,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
       - [x] Margins from config (like there was `x` and `y` options)
         - [x] Use RealtiveNum instead
       - [ ] Option to place entry down if window is anchored to the bottom
-    - [ ] Dynamic window size on mathces update wrapping all in scroll if it's too big
+    - [x] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
 - [ ] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
   - [ ] Config option to save previous search on close and have it on open

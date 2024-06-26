@@ -216,6 +216,27 @@ pub fn refresh_matches(
                     plugin_clone,
                     runtime_data_clone_clone.clone(),
                 );
+
+                // dynamically change window size
+                let main_list_height = main_list_rc_clone_clone.height();
+                println!("{}", main_list_height);
+
+                // TODO use something like get_top_level or get_window instead of climbing up parents
+                // TODO we need to check if new size fits screen because we can place window anywhere so some part of it can be out of bounds
+                // TODO it doesn't shrink back
+                main_list_rc_clone_clone
+                    .parent()
+                    .unwrap() // ViewPort/ScrollWindow
+                    .parent()
+                    .unwrap() // ScrollWindow/Box of entry and ScrollWindow
+                    .set_height_request(
+                        std::convert::TryInto::<u32>::try_into(
+                            main_list_height
+                                .min(runtime_data_clone_clone.borrow().geometry.height())
+                                - 200, // workaround
+                        )
+                        .unwrap_or(0) as i32,
+                    );
             })
         });
     }

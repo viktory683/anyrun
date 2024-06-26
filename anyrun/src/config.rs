@@ -1,5 +1,6 @@
 use anyrun_interface::PluginRef as Plugin;
 use clap::{Parser, ValueEnum};
+use gtk::gdk::Rectangle;
 use serde::Deserialize;
 use std::{env, fs, path::PathBuf};
 
@@ -202,6 +203,7 @@ pub struct RuntimeData {
     pub config: Config,
     pub error_label: String,
     pub config_dir: String,
+    pub geometry: Rectangle,
 }
 
 /// The naming scheme for CSS styling
