@@ -210,7 +210,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
     - [x] Get rid of full screen window
       - [x] Anchors from config
       - [x] Margins from config (like there was `x` and `y` options)
-        - [ ] Use RealtiveNum instead
+        - [x] Use RealtiveNum instead
       - [ ] Option to place entry down if window is anchored to the bottom
     - [ ] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry

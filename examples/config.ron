@@ -14,14 +14,14 @@ Config(
     // Default: [Top]
     edges: [Top],
 
-    // Array[i32] of margins for edges
+    // Array[Absolute|Fraction] of margins for edges
     // Place it in order you specifyed `edges`
     //
     // Example:
     //     edges: [Bottom, Left],
-    //     margin: [10, 20],
-    // from the bottom there will be margin 10
-    // from the left there will be margin 20
+    //     margin: [Absolute(10), Fraction(0.1)],
+    // from the bottom there will be margin 10px
+    // from the left there will be margin (width_of_display * 0.1) // with 1080 it's about 108px
     // 
     // Default: [] // (empty array so no margins)
     margin: [],
