@@ -194,7 +194,14 @@ pub fn refresh_matches(
         main_list_rc.remove(&child)
     }
 
-    let handle_async_matches = |plugin: &Plugin, id: u64| {
+    let plugins = if let Some(exclusive_plugin) = runtime_data.borrow().exclusive.as_ref() {
+        vec![*exclusive_plugin]
+    } else {
+        plugins.to_vec()
+    };
+
+    for plugin in plugins.iter() {
+        let id = plugin.get_matches()(input.into());
         let plugin_clone = *plugin;
         let main_list_rc_clone = main_list_rc.clone();
         let runtime_data_clone = runtime_data.clone();
@@ -211,17 +218,6 @@ pub fn refresh_matches(
                 );
             })
         });
-    };
-
-    if let Some(exclusive_plugin) = runtime_data.borrow().exclusive.as_ref() {
-        let id = exclusive_plugin.get_matches()(input.into());
-        handle_async_matches(exclusive_plugin, id);
-        return;
-    }
-
-    for plugin in plugins.iter() {
-        let id = plugin.get_matches()(input.into());
-        handle_async_matches(plugin, id);
     }
 }
 

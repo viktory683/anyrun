@@ -131,11 +131,6 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         refresh_matches("", &plugins, main_list.clone(), runtime_data.clone());
     }
 
-    // // TODO
-    // if runtime_data.borrow().config.close_on_click {
-    //     handle_close_on_click(window.clone());
-    // }
-
     configure_main_window(
         window.clone(),
         runtime_data.clone(),
