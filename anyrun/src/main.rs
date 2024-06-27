@@ -29,8 +29,8 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
     let (mut config, error_label) = load_config(&config_dir);
     config.merge_opt(args.config);
 
-    let geometry = gdk::Display::default()
-        .expect("No display found")
+    let display = gdk::Display::default().expect("No display found");
+    let monitor = display
         .monitors()
         .into_iter()
         .filter_map(|m| m.ok())
@@ -39,8 +39,8 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
         .expect("No monitor found")
         .clone()
         .downcast::<gdk::Monitor>()
-        .expect("Can't downcast Object to Monitor")
-        .geometry();
+        .expect("Can't downcast Object to Monitor");
+    let geometry = monitor.geometry();
 
     let runtime_data = Rc::new(RefCell::new(RuntimeData {
         exclusive: None,

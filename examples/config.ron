@@ -41,8 +41,9 @@ Config(
     // Hide the plugin info panel
     hide_plugin_info: false, 
 
-    // Close window when a click outside the main box is received
-    close_on_click: false,
+    // If `true` will not let you operate with other windows while Anyrun opened
+    // Test it yourself what you prefer
+    steal_focus: false,
 
     // Show search results immediately when Anyrun starts
     show_results_immediately: false,

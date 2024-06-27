@@ -35,6 +35,8 @@ pub struct Config {
     #[serde(default)]
     pub hide_plugin_info: bool,
     #[serde(default)]
+    pub steal_focus: bool,
+    #[serde(default)]
     pub ignore_exclusive_zones: bool,
     #[serde(default)]
     pub show_results_immediately: bool,
@@ -76,8 +78,6 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            // x: Self::default_x(),
-            // y: Self::default_y(),
             width: Self::default_width(),
             height: Self::default_height(),
             edges: Self::default_edges(),
@@ -87,7 +87,7 @@ impl Default for Config {
             hide_plugins_icons: true,
             hide_plugin_info: false,
             ignore_exclusive_zones: false,
-            // close_on_click: false,
+            steal_focus: false,
             show_results_immediately: false,
             layer: Layer::default(),
         }
@@ -135,7 +135,7 @@ impl From<Layer> for gtk_layer_shell::Layer {
 
 impl Default for Layer {
     fn default() -> Self {
-        Self::Overlay
+        Self::Top
     }
 }
 

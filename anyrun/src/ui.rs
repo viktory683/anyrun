@@ -23,9 +23,13 @@ pub fn setup_main_window(
 fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<RuntimeData>>) {
     window.init_layer_shell();
 
-    runtime_data
-        .borrow()
-        .config
+    let config = &runtime_data.borrow().config;
+
+    let geometry = runtime_data.borrow().geometry;
+    let width = geometry.width().try_into().unwrap();
+    let height = geometry.height().try_into().unwrap();
+
+    config
         .edges
         .clone()
         .into_iter()
@@ -33,31 +37,31 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
         .for_each(|(i, edge)| {
             window.set_anchor(edge.into(), true);
 
-            let geometry = runtime_data.borrow().geometry;
-
             window.set_margin(
                 edge.into(),
-                runtime_data
-                    .borrow()
-                    .config
+                config
                     .margin
                     .get(i)
                     .unwrap_or(&RelativeNum::default())
                     .to_val(match edge {
-                        Edge::Left | Edge::Right => geometry.width().try_into().unwrap(),
-                        Edge::Top | Edge::Bottom => geometry.height().try_into().unwrap(),
+                        Edge::Left | Edge::Right => width,
+                        Edge::Top | Edge::Bottom => height,
                     }),
             );
         });
 
     window.set_namespace("anyrun");
 
-    if runtime_data.borrow().config.ignore_exclusive_zones {
+    if config.ignore_exclusive_zones {
         window.set_exclusive_zone(-1);
     }
 
-    window.set_keyboard_mode(gtk_layer_shell::KeyboardMode::Exclusive);
-    window.set_layer(runtime_data.borrow().config.layer.into());
+    window.set_keyboard_mode(if config.steal_focus {
+        gtk_layer_shell::KeyboardMode::Exclusive
+    } else {
+        gtk_layer_shell::KeyboardMode::OnDemand
+    });
+    window.set_layer(config.layer.into());
 }
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
