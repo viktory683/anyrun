@@ -16,3 +16,5 @@ anyrun-interface = { path = "../anyrun-interface" }
 wl-clipboard-rs = "0.9.0"
 nix = { version = "0.29.0", default-features = false, features = ["process"] }
 clap = { version = "4.5.7", features = ["derive"] }
+log = "0.4.21"
+env_logger = "0.11.3"

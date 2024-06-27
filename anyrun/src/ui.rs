@@ -3,6 +3,7 @@ use std::{cell::RefCell, fs, io, rc::Rc};
 use anyrun_interface::{HandleResult, Match, PluginRef as Plugin};
 use gtk::{gdk, glib, prelude::*};
 use gtk_layer_shell::LayerShell;
+use log::error;
 
 use crate::config::{style_names, Edge, PostRunAction, RelativeNum, RuntimeData};
 
@@ -156,7 +157,7 @@ pub fn handle_selection_activation<F>(
         }
         HandleResult::Stdout(bytes) => {
             if let Err(why) = io::Write::write_all(&mut io::stdout().lock(), &bytes) {
-                eprintln!("Error outputting content to stdout: {}", why);
+                error!("Error outputting content to stdout: {}", why);
             }
             window.close();
         }

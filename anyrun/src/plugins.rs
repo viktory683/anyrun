@@ -2,6 +2,7 @@ use std::{cell::RefCell, env, path::PathBuf, rc::Rc, time::Duration};
 
 use abi_stable::std_types::ROption;
 use anyrun_interface::{Match, PluginRef as Plugin, PollResult};
+use log::debug;
 
 use crate::config::{style_names, RuntimeData, DEFAULT_CONFIG_DIR};
 
@@ -219,7 +220,7 @@ pub fn refresh_matches(
 
                 // dynamically change window size
                 let main_list_height = main_list_rc_clone_clone.height();
-                println!("{}", main_list_height);
+                debug!("main_list_height={}", main_list_height);
 
                 // TODO use something like get_top_level or get_window instead of climbing up parents
                 // TODO we need to check if new size fits screen because we can place window anywhere so some part of it can be out of bounds

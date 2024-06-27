@@ -7,6 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 use anyrun_interface::PluginRef as Plugin;
 use clap::Parser;
 use gtk::{gdk, gio, glib, prelude::*};
+use log::{error, info};
 use nix::unistd;
 
 use config::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
@@ -15,6 +16,7 @@ use ui::*;
 use wl_clipboard_rs::copy;
 
 fn main() -> Result<glib::ExitCode, glib::Error> {
+    env_logger::init();
     gtk::init().expect("Failed to initialize GTK.");
 
     let app = gtk::Application::new(Some("com.kirottu.anyrun"), Default::default());
@@ -64,13 +66,13 @@ fn handle_post_run_action(runtime_data: Rc<RefCell<RuntimeData>>) {
     if let PostRunAction::Copy(bytes) = &runtime_data.borrow().post_run_action {
         match unsafe { unistd::fork() } {
             Ok(unistd::ForkResult::Parent { .. }) => {
-                println!("Child spawned to serve copy requests.");
+                info!("Child spawned to serve copy requests.");
             }
             Ok(unistd::ForkResult::Child) => {
                 serve_copy_requests(bytes);
             }
             Err(why) => {
-                eprintln!("Failed to fork for copy sharing: {}", why);
+                error!("Failed to fork for copy sharing: {}", why);
             }
         }
     }
