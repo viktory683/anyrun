@@ -66,22 +66,20 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
 }
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
-    let provider = gtk::CssProvider::new();
     let config_dir = &runtime_data.borrow().config_dir;
     let css_path = format!("{}/style.css", config_dir);
 
     if fs::metadata(&css_path).is_ok() {
+        let provider = gtk::CssProvider::new();
         provider.load_from_path(css_path);
-    } else {
-        provider.load_from_path("../res/style.css");
-    }
 
-    let display = gdk::Display::default().expect("Failed to get GDK display for CSS provider!");
-    gtk::style_context_add_provider_for_display(
-        &display,
-        &provider,
-        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-    );
+        let display = gdk::Display::default().expect("Failed to get GDK display for CSS provider!");
+        gtk::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
 }
 
 pub fn connect_window_key_press_events(
