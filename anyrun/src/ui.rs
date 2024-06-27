@@ -3,7 +3,7 @@ use std::{cell::RefCell, fs, io, rc::Rc};
 use anyrun_interface::{HandleResult, Match, PluginRef as Plugin};
 use gtk::{gdk, glib, prelude::*};
 use gtk_layer_shell::LayerShell;
-use log::error;
+use log::*;
 
 use crate::config::{style_names, Edge, PostRunAction, RelativeNum, RuntimeData};
 
@@ -17,6 +17,8 @@ pub fn setup_main_window(
         .build();
 
     setup_layer_shell(&window, runtime_data.clone());
+
+    window.present();
 
     window
 }
@@ -163,7 +165,7 @@ pub fn handle_selection_activation<F>(
 }
 
 pub fn configure_main_window(
-    window: Rc<impl WidgetExt + GtkWindowExt>,
+    window: Rc<impl WidgetExt + GtkWindowExt + NativeExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     entry: Rc<impl WidgetExt>,
     main_list: Rc<impl WidgetExt>,
@@ -205,7 +207,7 @@ pub fn configure_main_window(
     // TODO window needs to be resized on `refresh_matches` if it fits `max_content_height`
     let scroll_window = gtk::ScrolledWindow::builder()
         // .min_content_width(200)
-        .min_content_height(400)
+        .min_content_height(120)
         // .max_content_height(800)
         .vexpand(true)
         .hexpand(true)
@@ -215,6 +217,5 @@ pub fn configure_main_window(
     scroll_window.set_child(Some(&*main_list));
     main_vbox.append(&scroll_window);
     window.set_child(Some(&main_vbox));
-    window.present();
     entry.grab_focus();
 }

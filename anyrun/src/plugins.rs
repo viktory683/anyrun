@@ -2,7 +2,8 @@ use std::{cell::RefCell, env, path::PathBuf, rc::Rc, time::Duration};
 
 use abi_stable::std_types::ROption;
 use anyrun_interface::{Match, PluginRef as Plugin, PollResult};
-use log::debug;
+#[allow(unused_imports)]
+use log::*;
 
 use crate::config::{style_names, RuntimeData, DEFAULT_CONFIG_DIR};
 
@@ -185,6 +186,15 @@ pub fn load_plugin(plugin_path: &PathBuf, runtime_data: Rc<RefCell<RuntimeData>>
     plugin
 }
 
+pub fn get_window(widget: Rc<impl WidgetExt>) -> gtk::Window {
+    let parent = widget.parent().expect("Can't get widget parent");
+    let window = parent.clone().downcast::<gtk::Window>();
+    if let Ok(w) = window {
+        return w;
+    }
+    get_window(Rc::new(parent))
+}
+
 pub fn refresh_matches(
     input: &str,
     plugins: &[Plugin],
@@ -219,25 +229,14 @@ pub fn refresh_matches(
                 );
 
                 // dynamically change window size
-                let main_list_height = main_list_rc_clone_clone.height();
-                debug!("main_list_height={}", main_list_height);
+                let natural_size = main_list_rc_clone_clone.preferred_size().1;
+                // TODO 32 is entry height. Move to config or get from actual entry
+                let main_list_height = natural_size.height() + 32;
 
-                // TODO use something like get_top_level or get_window instead of climbing up parents
-                // TODO we need to check if new size fits screen because we can place window anywhere so some part of it can be out of bounds
-                // TODO it doesn't shrink back
-                main_list_rc_clone_clone
-                    .parent()
-                    .unwrap() // ViewPort/ScrollWindow
-                    .parent()
-                    .unwrap() // ScrollWindow/Box of entry and ScrollWindow
-                    .set_height_request(
-                        std::convert::TryInto::<u32>::try_into(
-                            main_list_height
-                                .min(runtime_data_clone_clone.borrow().geometry.height())
-                                - 200, // workaround
-                        )
-                        .unwrap_or(0) as i32,
-                    );
+                let window = get_window(main_list_rc_clone_clone.clone());
+                let monitor_height = runtime_data_clone_clone.borrow().geometry.height();
+                // TODO move workaround to config to something like max_height or height_adjustment
+                window.set_default_height(main_list_height.min(monitor_height - 100));
             })
         });
     }

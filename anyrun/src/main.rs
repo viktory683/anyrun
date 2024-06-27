@@ -7,7 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 use anyrun_interface::PluginRef as Plugin;
 use clap::Parser;
 use gtk::{gdk, gio, glib, prelude::*};
-use log::{error, info};
+use log::*;
 use nix::unistd;
 
 use config::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
