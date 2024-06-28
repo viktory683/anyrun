@@ -71,7 +71,7 @@ Make sure all of the dependencies are installed, and then run the following
 commands in order:
 
 ```sh
-git clone --recursive https://github.com/Kirottu/anyrun.git # Clone the repository
+git clone --recursive https://github.com/bzglve/anyrun.git # Clone the repository
 cd anyrun # Change the active directory to it
 cargo build --release # Build all the packages
 cargo install --path anyrun/ # Install the anyrun binary
@@ -136,7 +136,7 @@ use them.
 >
 > May be changes, not tested
 
-Anyrun supports [GTK+ CSS](https://docs.gtk.org/gtk3/css-overview.html) styling.
+Anyrun supports [GTK+ CSS](https://docs.gtk.org/gtk4/css-overview.html) styling.
 The names for the different widgets and widgets associated with them are as
 follows:
 
