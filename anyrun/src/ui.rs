@@ -1,11 +1,14 @@
 use std::{cell::RefCell, fs, io, rc::Rc};
 
-use anyrun_interface::{HandleResult, Match, PluginRef as Plugin};
+use anyrun_interface::{HandleResult, Match};
 use gtk::{gdk, glib, prelude::*};
 use gtk_layer_shell::LayerShell;
 use log::*;
 
-use crate::config::{style_names, Edge, PostRunAction, RelativeNum, RuntimeData};
+use crate::{
+    config::{style_names, Edge, PostRunAction, RelativeNum, RuntimeData},
+    types::MatchRow,
+};
 
 pub fn setup_main_window(
     app: &impl IsA<gtk::Application>,
@@ -14,6 +17,7 @@ pub fn setup_main_window(
     let window = gtk::ApplicationWindow::builder()
         .application(app)
         .name(style_names::WINDOW)
+        .default_height(500) // TODO move to config. Yes let window be static size
         .build();
 
     setup_layer_shell(&window, runtime_data.clone());
@@ -133,17 +137,27 @@ pub fn connect_entry_key_press_events(
 }
 
 pub fn handle_selection_activation<F>(
-    row: impl ObjectExt,
+    row_id: usize,
     window: Rc<impl GtkWindowExt>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     mut on_refresh: F,
 ) where
     F: FnMut(bool),
 {
-    let rmatch = (unsafe { (*row.data::<Rc<RefCell<Match>>>("match").unwrap().as_ptr()).clone() })
+    let match_row = runtime_data
         .borrow()
-        .clone();
-    let plugin = unsafe { *row.data::<Plugin>("plugin").unwrap().as_ptr() };
+        .list_store
+        .item(row_id.try_into().unwrap())
+        .unwrap_or_else(|| panic!("Failed to get list_store item at {} position", row_id))
+        .downcast::<MatchRow>()
+        .expect("Failed to downcast Object to MatchRow");
+
+    let rmatch: Match = match_row.clone().into();
+    let plugin = *runtime_data
+        .borrow()
+        .plugins
+        .get(match_row.get_plugin_id() as usize)
+        .expect("Can't get plugin");
 
     match plugin.handle_selection()(rmatch) {
         HandleResult::Close => window.close(),

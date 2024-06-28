@@ -1,6 +1,6 @@
 use anyrun_interface::PluginRef as Plugin;
 use clap::{Parser, ValueEnum};
-use gtk::gdk::Rectangle;
+use gtk::{gdk::Rectangle, gio};
 use serde::Deserialize;
 use std::{env, fs, path::PathBuf};
 
@@ -8,11 +8,6 @@ use std::{env, fs, path::PathBuf};
 #[anyrun_macros::config_args]
 #[derive(Deserialize)]
 pub struct Config {
-    // #[serde(default = "Config::default_x")]
-    // pub x: RelativeNum,
-
-    // #[serde(default = "Config::default_y")]
-    // pub y: RelativeNum,
     #[serde(default = "Config::default_width")]
     pub width: RelativeNum,
 
@@ -45,14 +40,6 @@ pub struct Config {
 }
 
 impl Config {
-    // fn default_x() -> RelativeNum {
-    //     RelativeNum::Fraction(0.5)
-    // }
-
-    // fn default_y() -> RelativeNum {
-    //     RelativeNum::Absolute(0)
-    // }
-
     fn default_width() -> RelativeNum {
         RelativeNum::Fraction(0.5)
     }
@@ -199,11 +186,13 @@ pub enum PostRunAction {
 // Struct for runtime data
 pub struct RuntimeData {
     pub exclusive: Option<Plugin>,
+    pub plugins: Vec<Plugin>,
     pub post_run_action: PostRunAction,
     pub config: Config,
     pub error_label: String,
     pub config_dir: String,
     pub geometry: Rectangle,
+    pub list_store: gio::ListStore,
 }
 
 /// The naming scheme for CSS styling
