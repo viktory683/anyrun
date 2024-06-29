@@ -4,10 +4,7 @@ use anyrun_interface::{Match, PluginRef as Plugin, PollResult};
 #[allow(unused_imports)]
 use log::*;
 
-use crate::{
-    config::{style_names, RuntimeData, DEFAULT_CONFIG_DIR},
-    types::GMatch,
-};
+use crate::{config::*, types::GMatch};
 
 use gtk::{gio, glib, prelude::*};
 
@@ -151,12 +148,12 @@ pub fn handle_matches(plugin_id: u64, matches: &[Match], list_store: gio::ListSt
 /// let plugin_dirs = vec![PathBuf::from("/usr/local/lib/plugins"), PathBuf::from("/opt/plugins")];
 /// let plugin = load_plugin(&plugin_path, &plugin_dirs);
 /// ```
-pub fn load_plugin(plugin_path: &PathBuf, config_dir: &str) -> Plugin {
+pub fn load_plugin(plugin_path: &PathBuf, config_dir: &PathBuf) -> Plugin {
     let plugins_paths: Vec<PathBuf> = match env::var_os("ANYRUN_PLUGINS") {
         Some(paths) => env::split_paths(&paths).collect(),
-        None => [config_dir, DEFAULT_CONFIG_DIR]
+        None => [config_dir, &default_config_dir()]
             .iter()
-            .map(|plugins_path| PathBuf::from(format!("{}/plugins", plugins_path)))
+            .map(|plugins_path| plugins_path.join("plugins"))
             .collect(),
     };
 
@@ -173,7 +170,7 @@ pub fn load_plugin(plugin_path: &PathBuf, config_dir: &str) -> Plugin {
     let plugin = abi_stable::library::lib_header_from_path(&path)
         .and_then(|header| header.init_root_module::<Plugin>())
         .unwrap_or_else(|_| panic!("Failed to load plugin: {}", path.to_string_lossy()));
-    plugin.init()(config_dir.into());
+    plugin.init()(config_dir.to_string_lossy().into());
     plugin
 }
 

@@ -30,7 +30,7 @@ Config(
     ignore_exclusive_zones: false, 
 
     // Layer shell layer: Background, Bottom, Top, Overlay  
-    layer: Overlay, 
+    layer: Top, 
 
     // Hide plugin info icons  
     hide_plugins_icons: true, 

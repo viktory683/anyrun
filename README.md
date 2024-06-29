@@ -67,17 +67,32 @@ See [Nix.md](docs/Nix.md)
 
 ### Manual installation
 
-Make sure all of the dependencies are installed, and then run the following
-commands in order:
+1. Make sure all of the [dependencies](#dependencies) are installed
+2. Clone the repo
+    ```bash
+    git clone --recursive https://github.com/bzglve/anyrun.git
+    ```
+3. Change dir
+    ```bash
+    cd anyrun
+    ```
+4. Run [install.sh](install.sh) or the following commands in order:
+    ```bash
+    cargo build --release # Build all the packages
+    cargo install --path anyrun/ # Install the anyrun binary
+    sudo mkdir -p /etc/xdg/anyrun/plugins # Create the config directory and the plugins subdirectory
+    sudo cp target/release/*.so /etc/xdg/anyrun/plugins # Copy all of the built plugins to the correct directory
+    sudo cp examples/config.ron /etc/xdg/anyrun/config.ron # Copy the default config file
+    ```
 
-```sh
-git clone --recursive https://github.com/bzglve/anyrun.git # Clone the repository
-cd anyrun # Change the active directory to it
-cargo build --release # Build all the packages
-cargo install --path anyrun/ # Install the anyrun binary
-mkdir -p ~/.config/anyrun/plugins # Create the config directory and the plugins subdirectory
-cp target/release/*.so ~/.config/anyrun/plugins # Copy all of the built plugins to the correct directory
-cp examples/config.ron ~/.config/anyrun/config.ron # Copy the default config file
+> [!NOTE]
+> 
+> Custom configs should be placed into `$XDG_CONFIG_HOME/anyrun` (`$HOME/.config/anyrun`)
+> 
+> You can run the following to copy default config to custom
+
+```bash
+cp -r /etc/xdg/anyrun ~/.config/
 ```
 
 ## Plugins

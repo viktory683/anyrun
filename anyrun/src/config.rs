@@ -1,8 +1,11 @@
 use anyrun_interface::PluginRef as Plugin;
 use clap::{Parser, ValueEnum};
-use gtk::{gdk::Rectangle, gio};
+use gtk::{gdk::Rectangle, gio, glib};
 use serde::Deserialize;
-use std::{env, fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 // Config struct and its implementation
 #[anyrun_macros::config_args]
@@ -138,7 +141,7 @@ pub enum RelativeNum {
 
 impl Default for RelativeNum {
     fn default() -> Self {
-        RelativeNum::Fraction(0.5)
+        RelativeNum::Absolute(0)
     }
 }
 
@@ -193,7 +196,7 @@ pub struct RuntimeData {
     pub post_run_action: PostRunAction,
     pub config: Config,
     pub error_label: String,
-    pub config_dir: String,
+    pub config_dir: PathBuf,
     pub geometry: Rectangle,
     pub list_store: gio::ListStore,
 }
@@ -211,12 +214,25 @@ pub mod style_names {
     pub const MATCH_DESC: &str = "match-desc";
 }
 
-// Default config directory
-pub const DEFAULT_CONFIG_DIR: &str = "/etc/anyrun";
+pub fn default_config_dir() -> PathBuf {
+    let dirs = glib::system_config_dirs();
+    if let Some(dir) = dirs
+        .iter()
+        .map(|dir| dir.join("anyrun"))
+        .find(|dir| dir.exists())
+    {
+        return dir;
+    }
+
+    panic!(
+        "Can't find default config dir. Please check {:?} for \"anyrun\" subdirectory",
+        dirs
+    );
+}
 
 // Function to load config from file or use defaults
-pub fn load_config(config_dir: &str) -> (Config, String) {
-    let config_path = format!("{}/config.ron", config_dir);
+pub fn load_config(config_dir: &Path) -> (Config, String) {
+    let config_path = config_dir.join("config.ron");
 
     let content = match fs::read_to_string(config_path) {
         Ok(content) => content,
@@ -244,17 +260,15 @@ pub fn load_config(config_dir: &str) -> (Config, String) {
 }
 
 // Function to determine config directory
-pub fn determine_config_dir(config_dir_arg: &Option<String>) -> String {
-    config_dir_arg.clone().unwrap_or_else(|| {
-        let user_dir = format!(
-            "{}/.config/anyrun",
-            env::var("HOME").expect("Could not determine home directory! Is $HOME set?")
-        );
+pub fn determine_config_dir(config_dir_arg: &Option<String>) -> PathBuf {
+    if let Some(config_dir) = config_dir_arg {
+        return PathBuf::from(config_dir);
+    }
 
-        if PathBuf::from(&user_dir).exists() {
-            user_dir
-        } else {
-            DEFAULT_CONFIG_DIR.to_string()
-        }
-    })
+    let user_dir = glib::user_config_dir().join("anyrun");
+
+    if user_dir.exists() {
+        return user_dir;
+    }
+    default_config_dir()
 }

@@ -67,10 +67,10 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
 
 pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     let config_dir = &runtime_data.borrow().config_dir;
-    let css_path = format!("{}/style.css", config_dir);
+    let css_path = config_dir.join("style.css");
 
     if fs::metadata(&css_path).is_ok() {
-        info!("Applying custom CSS from {}", css_path);
+        info!("Applying custom CSS from {:?}", css_path);
         let provider = gtk::CssProvider::new();
         provider.load_from_path(css_path);
 
