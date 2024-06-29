@@ -11,9 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-
+      - uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+                  
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -22,13 +23,8 @@ jobs:
       - name: Bump nix
         run: nix flake update
 
-      - name: Install dependencies
-        run: nix profile install --inputs-from . nixpkgs#cargo-bump nixpkgs#cargo
-
       - name: Bump rust
-        run: |
-          cargo bump patch
-          cargo update
+        run: nix shell nixpkgs#cargo --command cargo update
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4

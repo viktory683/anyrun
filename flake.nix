@@ -28,7 +28,7 @@
         ...
       }: let
         inherit (pkgs) callPackage;
-      in {
+      in rec {
         # provide the formatter for nix fmt
         formatter = pkgs.alejandra;
 
@@ -46,30 +46,23 @@
             clippy # opinionated rust formatter
           ];
         };
-
+  
+        checks = packages;
         packages = let
           lockFile = ./Cargo.lock;
-
-          # Since all plugin derivations are called with the exact same arguments
-          # it is possible to streamline calling packages with a single function
-          # that takes name as an argument, and handles default inherits.
           mkPlugin = name:
             callPackage ./nix/plugins/default.nix {
-              inherit inputs lockFile;
-              inherit name;
+              inherit lockFile name;
             };
         in rec {
           default = anyrun;
-          anyrun = callPackage ./nix/default.nix {inherit inputs lockFile;};
+          anyrun = callPackage ./nix/default.nix {inherit lockFile;};
 
           anyrun-with-all-plugins = pkgs.callPackage ./nix/default.nix {
-            inherit inputs lockFile;
+            inherit lockFile;
             dontBuildPlugins = false;
           };
 
-          # Expose each plugin as a separate package. This uses the mkPlugin function
-          # to call the same derivation with same default inherits and the name of the
-          # plugin every time.
           applications = mkPlugin "applications";
           dictionary = mkPlugin "dictionary";
           kidex = mkPlugin "kidex";

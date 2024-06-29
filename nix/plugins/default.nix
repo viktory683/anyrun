@@ -4,11 +4,10 @@
   makeWrapper,
   rustPlatform,
   atk,
-  gtk3,
-  gtk-layer-shell,
+  gtk4,
+  gtk4-layer-shell,
   pkg-config,
   librsvg,
-  inputs,
   name,
   lockFile,
   ...
@@ -19,7 +18,7 @@ in
     pname = cargoToml.package.name;
     version = cargoToml.package.version;
 
-    src = "${inputs.self}";
+    src = ../../.;
     cargoLock = {
       inherit lockFile;
     };
@@ -27,9 +26,9 @@ in
     buildInputs = [
       glib
       atk
-      gtk3
       librsvg
-      gtk-layer-shell
+      gtk4
+      gtk4-layer-shell
     ];
 
     nativeBuildInputs = [
