@@ -58,8 +58,8 @@
               inherit inputs lockFile;
               inherit name;
             };
-        in {
-          default = self'.packages.anyrun;
+        in rec {
+          default = anyrun;
           anyrun = callPackage ./nix/default.nix {inherit inputs lockFile;};
 
           anyrun-with-all-plugins = pkgs.callPackage ./nix/default.nix {
@@ -87,9 +87,9 @@
       };
 
       flake = {
-        homeManagerModules = {
+        homeManagerModules = rec {
+          default = anyrun;
           anyrun = import ./nix/hm-module.nix self;
-          default = self.homeManagerModules.anyrun;
         };
       };
     };
