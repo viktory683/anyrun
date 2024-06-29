@@ -8,6 +8,10 @@ A wayland native krunner-like runner, made with customizability in mind.
 
 check out [fork comments](#fork-comments)
 
+and if you are interested in development/have some ideas/wanna share you opinion
+
+I will be glad if you visit [issues](https://github.com/bzglve/anyrun/issues) and [discussions](https://github.com/bzglve/anyrun/discussions)
+
 # Features
 
 - Style customizability with GTK+ CSS
