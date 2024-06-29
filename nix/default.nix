@@ -4,10 +4,10 @@
   lockFile,
   # Dependencies for Anyrun
   glib,
+  gtk4,
+  gtk4-layer-shell,
   rustPlatform,
   atk,
-  gtk3,
-  gtk-layer-shell,
   pkg-config,
   librsvg,
   rustfmt,
@@ -29,19 +29,21 @@ in
     src = ../.;
 
     buildInputs = [
-      pkg-config
       glib
       atk
-      gtk3
       librsvg
-      gtk-layer-shell
+      gtk4
+      gtk4-layer-shell
     ];
 
     cargoLock = {
       inherit lockFile;
     };
 
-    checkInputs = [cargo rustc];
+    checkInputs = [
+      cargo
+      rustc
+    ];
 
     nativeBuildInputs = [
       pkg-config
@@ -73,19 +75,7 @@ in
 
     meta = {
       description = "A wayland native, highly customizable runner.";
-      homepage = "https://github.com/Kirottu/anyrun";
+      homepage = "https://github.com/bzglve/anyrun";
       license = with lib.licenses; [gpl3];
-      maintainers = [
-        {
-          email = "neo@neoney.dev";
-          github = "n3oney";
-          githubId = 30625554;
-          name = "Michał Minarowski";
-        }
-        {
-          email = "raf@notashelf.dev";
-          github = "NotAShelf";
-        }
-      ];
     };
   }

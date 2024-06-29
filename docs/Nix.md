@@ -1,11 +1,5 @@
 # Nix
 
-> [!WARNING]
->
-> Nix was not tested and probably will now work
-> 
-> Try at one's own risk
-
 You can use the flake:
 
 ```nix
@@ -13,8 +7,10 @@ You can use the flake:
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    anyrun.url = "github:anyrun-org/anyrun";
-    anyrun.inputs.nixpkgs.follows = "nixpkgs";
+    anyrun = {
+      url = "git+https://github.com/bzglve/anyrun?submodules=1";
+      inputs.nixpkgs.follows = "npkgs";
+    };
   };
 
   outputs = { self, nixpkgs, anyrun }: let
@@ -61,9 +57,9 @@ You use it in your system like this:
         ./some_plugin.so
         "${inputs.anyrun.packages.${pkgs.system}.anyrun-with-all-plugins}/lib/kidex"
       ];
-      x = { fraction = 0.5; };
-      y = { fraction = 0.3; };
-      width = { fraction = 0.3; };
+      x.fraction = 0.5; 
+      y.fraction = 0.3; 
+      width.fraction = 0.3; 
       hideIcons = false;
       ignoreExclusiveZones = false;
       layer = "overlay";
@@ -86,20 +82,4 @@ You use it in your system like this:
     '';
   };
 }
-```
-
-You might also want to use the binary cache to avoid building locally.
-
-```nix
-nix.settings = {
-    builders-use-substitutes = true;
-    # extra substituters to add
-    extra-substituters = [
-        "https://anyrun.cachix.org"
-    ];
-
-    extra-trusted-public-keys = [
-        "anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="
-    ];
-};
 ```
