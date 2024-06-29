@@ -6,7 +6,7 @@ use log::*;
 
 use crate::{
     config::{style_names, RuntimeData, DEFAULT_CONFIG_DIR},
-    types::MatchRow,
+    types::GMatch,
 };
 
 use gtk::{gio, glib, prelude::*};
@@ -36,28 +36,24 @@ pub fn build_image(icon: &str) -> gtk::Image {
 
     match_image = if path.is_absolute() {
         match_image.file(path.to_string_lossy())
-    } else {
+        } else {
         match_image.icon_name(icon)
     };
     match_image.build()
 }
 
-pub fn create_widget_func(
-    runtime_data: Rc<RefCell<RuntimeData>>,
-    match_row: MatchRow,
-) -> gtk::Widget {
-    let binding = runtime_data.borrow();
-    let plugin = binding
+pub fn build_match_box(runtime_data: Rc<RefCell<RuntimeData>>, gmatch: GMatch) -> gtk::Widget {
+    let runtime_data = runtime_data.borrow();
+    let plugin = runtime_data
         .plugins
-        .get(match_row.get_plugin_id() as usize)
+        .get(gmatch.get_plugin_id() as usize)
         .expect("Can't get plugin by id");
-    let first_plugin_match = match_row.get_first();
 
     let hbox = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .build();
 
-    if !runtime_data.borrow().config.hide_plugin_info {
+    if !runtime_data.config.hide_plugin_info {
         let plugin_info_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .width_request(200)
@@ -66,23 +62,20 @@ pub fn create_widget_func(
             .build();
 
         let plugin_info = plugin.info()();
-
-        if !runtime_data.borrow().config.hide_plugins_icons && first_plugin_match {
-            let icon = build_image(&plugin_info.icon);
-            plugin_info_box.append(&icon);
+        if !runtime_data.config.hide_plugins_icons && gmatch.get_first() {
+            plugin_info_box.append(&build_image(&plugin_info.icon));
         }
 
-        let plugin_name = if first_plugin_match {
-            &plugin_info.name
-        } else {
-            ""
-        };
         let plugin_label = gtk::Label::builder()
             .halign(gtk::Align::End)
-            .label(plugin_name)
+            .label(if gmatch.get_first() {
+                &plugin_info.name
+            } else {
+                ""
+            })
             .build();
-        plugin_info_box.append(&plugin_label);
 
+        plugin_info_box.append(&plugin_label);
         hbox.append(&plugin_info_box);
     }
 
@@ -91,10 +84,9 @@ pub fn create_widget_func(
         .spacing(10)
         .build();
 
-    if !runtime_data.borrow().config.hide_match_icons {
-        if let Some(icon) = match_row.get_icon() {
-            let image = build_image(&icon);
-            match_box.append(&image);
+    if !runtime_data.config.hide_match_icons {
+        if let Some(icon) = gmatch.get_icon() {
+            match_box.append(&build_image(&icon));
         }
     }
 
@@ -104,22 +96,20 @@ pub fn create_widget_func(
         .vexpand(true)
         .build();
 
-    let title = build_label(
+    vbox.append(&build_label(
         style_names::MATCH_TITLE,
-        match_row.get_use_pango(),
-        &match_row.get_title(),
+        gmatch.get_use_pango(),
+        &gmatch.get_title(),
         true,
-    );
-    vbox.append(&title);
+    ));
 
-    if let Some(desc) = match_row.get_description() {
-        let desc = build_label(
+    if let Some(desc) = gmatch.get_description() {
+        vbox.append(&build_label(
             style_names::MATCH_DESC,
-            match_row.get_use_pango(),
+            gmatch.get_use_pango(),
             &desc,
             false,
-        );
-        vbox.append(&desc);
+        ));
     }
 
     match_box.append(&vbox);
@@ -129,16 +119,11 @@ pub fn create_widget_func(
 }
 
 pub fn handle_matches(plugin_id: u64, matches: &[Match], list_store: gio::ListStore) {
-    let mut first = true;
-
-    for rmatch in matches.iter() {
-        let item = MatchRow::from(rmatch.clone());
-        item.set_plugin_id(plugin_id);
-        if !first {
-            item.set_first(first);
-        }
-        first = false;
-        list_store.append(&item);
+    for (index, rmatch) in matches.iter().enumerate() {
+        let gmatch = GMatch::from(rmatch.clone());
+        gmatch.set_plugin_id(plugin_id);
+        gmatch.set_first(index == 0);
+        list_store.append(&gmatch);
     }
 }
 
@@ -180,25 +165,25 @@ pub fn load_plugin(plugin_path: &PathBuf, config_dir: &str) -> Plugin {
     } else {
         plugins_paths
             .iter()
-            .map(|plugins_path| plugins_path.join(plugin_path))
+            .map(|dir| dir.join(plugin_path))
             .find(|path| path.exists())
             .unwrap_or_else(|| panic!("Invalid plugin path: {}", plugin_path.to_string_lossy()))
     };
 
     let plugin = abi_stable::library::lib_header_from_path(&path)
-        .and_then(|plugin| plugin.init_root_module::<Plugin>())
+        .and_then(|header| header.init_root_module::<Plugin>())
         .unwrap_or_else(|_| panic!("Failed to load plugin: {}", path.to_string_lossy()));
     plugin.init()(config_dir.into());
     plugin
 }
 
 pub fn refresh_matches(input: &str, plugins: &[Plugin], runtime_data: Rc<RefCell<RuntimeData>>) {
-    let list_store = runtime_data.clone().borrow().list_store.clone();
+    let list_store = runtime_data.borrow().list_store.clone();
     list_store.remove_all();
 
     let mut exclusive_plugin_id = None;
 
-    let plugins = if let Some(exclusive_plugin) = runtime_data.borrow().exclusive.as_ref() {
+    let plugins_to_use = if let Some(exclusive_plugin) = runtime_data.borrow().exclusive.as_ref() {
         exclusive_plugin_id = plugins
             .iter()
             .position(|p| p.info() == exclusive_plugin.info());
@@ -208,7 +193,7 @@ pub fn refresh_matches(input: &str, plugins: &[Plugin], runtime_data: Rc<RefCell
         plugins.to_vec()
     };
 
-    for (plugin_id, plugin) in plugins.iter().enumerate() {
+    for (plugin_id, plugin) in plugins_to_use.iter().enumerate() {
         let id = plugin.get_matches()(input.into());
         let plugin_clone = *plugin;
 
@@ -217,7 +202,7 @@ pub fn refresh_matches(input: &str, plugins: &[Plugin], runtime_data: Rc<RefCell
         glib::timeout_add_local(Duration::from_millis(1), move || {
             async_match(&plugin_clone, id, |matches| {
                 handle_matches(
-                    exclusive_plugin_id.unwrap_or(plugin_id).try_into().unwrap(),
+                    exclusive_plugin_id.unwrap_or(plugin_id) as u64,
                     matches,
                     list_store_clone.clone(),
                 )

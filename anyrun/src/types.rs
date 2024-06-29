@@ -2,6 +2,7 @@ use abi_stable::{
     std_types::{ROption, RString},
     traits::IntoReprRust,
 };
+use anyrun_interface::Match as RMatch;
 use gtk::{
     gio::prelude::*,
     glib::{self, subclass::prelude::*, ParamSpec},
@@ -12,25 +13,26 @@ mod imp {
     use super::*;
 
     #[derive(Default)]
-    pub struct MatchRow {
+    pub struct GMatch {
         pub title: RefCell<String>,
         pub description: RefCell<Option<String>>,
         pub use_pango: Cell<bool>,
         pub icon: RefCell<Option<String>>,
         pub id: Cell<u64>,
-        id_some: Cell<bool>, // workarond to get something like `Option<u64>` for id with glib because I couldn't find some
+        // workarond to get something like `Option<u64>` for id with glib because I couldn't find some
+        id_some: Cell<bool>,
         pub plugin_id: Cell<u64>,
         pub first: Cell<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MatchRow {
-        const NAME: &'static str = "MatchRow";
+    impl ObjectSubclass for GMatch {
+        const NAME: &'static str = "GMatch";
 
-        type Type = super::MatchRow;
+        type Type = super::GMatch;
     }
 
-    impl ObjectImpl for MatchRow {
+    impl ObjectImpl for GMatch {
         fn properties() -> &'static [ParamSpec] {
             use std::sync::OnceLock;
             static PROPERTIES: OnceLock<Vec<glib::ParamSpec>> = OnceLock::new();
@@ -51,25 +53,25 @@ mod imp {
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
             match pspec.name() {
                 "title" => {
-                    let title: String = value
+                    let title = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
                     self.title.replace(title);
                 }
                 "description" => {
-                    let description: Option<String> = value
+                    let description = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
                     self.description.replace(description);
                 }
                 "use-pango" => {
-                    let use_pango: bool = value
+                    let use_pango = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
                     self.use_pango.replace(use_pango);
                 }
                 "icon" => {
-                    let icon: Option<String> = value
+                    let icon = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
                     self.icon.replace(icon);
@@ -123,10 +125,10 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct MatchRow(ObjectSubclass<imp::MatchRow>);
+    pub struct GMatch(ObjectSubclass<imp::GMatch>);
 }
 
-impl MatchRow {
+impl GMatch {
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -200,15 +202,15 @@ impl MatchRow {
     }
 }
 
-impl Default for MatchRow {
+impl Default for GMatch {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl std::fmt::Display for MatchRow {
+impl std::fmt::Display for GMatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MatchRow")
+        f.debug_struct("GMatch")
             .field("title", &self.get_title())
             .field("description", &self.get_description())
             .field("use_pango", &self.get_use_pango())
@@ -220,8 +222,8 @@ impl std::fmt::Display for MatchRow {
     }
 }
 
-impl From<anyrun_interface::Match> for MatchRow {
-    fn from(value: anyrun_interface::Match) -> Self {
+impl From<RMatch> for GMatch {
+    fn from(value: RMatch) -> Self {
         fn from_ropt_to_opt(value: ROption<RString>) -> Option<String> {
             if let ROption::RSome(s) = value {
                 Some(s.to_string())
@@ -246,8 +248,8 @@ impl From<anyrun_interface::Match> for MatchRow {
     }
 }
 
-impl From<MatchRow> for anyrun_interface::Match {
-    fn from(val: MatchRow) -> Self {
+impl From<GMatch> for RMatch {
+    fn from(val: GMatch) -> Self {
         fn from_opt_to_ropt(value: Option<String>) -> ROption<RString> {
             if let Some(s) = value {
                 ROption::RSome(s.into())
@@ -256,7 +258,7 @@ impl From<MatchRow> for anyrun_interface::Match {
             }
         }
 
-        anyrun_interface::Match {
+        RMatch {
             title: val.get_title().into(),
             description: from_opt_to_ropt(val.get_description()),
             use_pango: val.get_use_pango(),

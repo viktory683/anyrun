@@ -1,13 +1,17 @@
 use std::{cell::RefCell, fs, io, rc::Rc};
 
 use anyrun_interface::{HandleResult, Match};
-use gtk::{gdk, glib, prelude::*};
+use gtk::{
+    gdk::{self, Key},
+    glib,
+    prelude::*,
+};
 use gtk_layer_shell::LayerShell;
 use log::*;
 
 use crate::{
     config::{style_names, Edge, PostRunAction, RelativeNum, RuntimeData},
-    types::MatchRow,
+    types::GMatch,
 };
 
 pub fn setup_main_window(
@@ -17,13 +21,11 @@ pub fn setup_main_window(
     let window = gtk::ApplicationWindow::builder()
         .application(app)
         .name(style_names::WINDOW)
-        .default_height(500) // TODO move to config. Yes let window be static size
+        .default_height(500) // TODO: move to config. Yes, let window be static size
         .build();
 
     setup_layer_shell(&window, runtime_data.clone());
-
     window.present();
-
     window
 }
 
@@ -31,31 +33,22 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
     window.init_layer_shell();
 
     let config = &runtime_data.borrow().config;
-
     let geometry = runtime_data.borrow().geometry;
     let width = geometry.width().try_into().unwrap();
     let height = geometry.height().try_into().unwrap();
 
-    config
-        .edges
-        .clone()
-        .into_iter()
-        .enumerate()
-        .for_each(|(i, edge)| {
-            window.set_anchor(edge.into(), true);
-
-            window.set_margin(
-                edge.into(),
-                config
-                    .margin
-                    .get(i)
-                    .unwrap_or(&RelativeNum::default())
-                    .to_val(match edge {
-                        Edge::Left | Edge::Right => width,
-                        Edge::Top | Edge::Bottom => height,
-                    }),
-            );
-        });
+    for (i, edge) in config.edges.clone().into_iter().enumerate() {
+        let margin = config
+            .margin
+            .get(i)
+            .unwrap_or(&RelativeNum::default())
+            .to_val(match edge {
+                Edge::Left | Edge::Right => width,
+                Edge::Top | Edge::Bottom => height,
+            });
+        window.set_anchor(edge.into(), true);
+        window.set_margin(edge.into(), margin);
+    }
 
     window.set_namespace("anyrun");
 
@@ -68,6 +61,7 @@ fn setup_layer_shell(window: &impl GtkWindowExt, runtime_data: Rc<RefCell<Runtim
     } else {
         gtk_layer_shell::KeyboardMode::OnDemand
     });
+
     window.set_layer(config.layer.into());
 }
 
@@ -76,6 +70,7 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     let css_path = format!("{}/style.css", config_dir);
 
     if fs::metadata(&css_path).is_ok() {
+        info!("Applying custom CSS from {}", css_path);
         let provider = gtk::CssProvider::new();
         provider.load_from_path(css_path);
 
@@ -88,22 +83,28 @@ pub fn load_custom_css(runtime_data: Rc<RefCell<RuntimeData>>) {
     }
 }
 
-pub fn connect_window_key_press_events(
-    window: Rc<impl WidgetExt + GtkWindowExt>,
+fn connect_key_press_events<F>(
+    widget: Rc<impl WidgetExt>,
     event_controller_key: gtk::EventControllerKey,
-) {
-    window.add_controller(event_controller_key.clone());
+    handler: F,
+) where
+    F: Fn(Key) -> glib::Propagation + 'static,
+{
+    widget.add_controller(event_controller_key.clone());
+    event_controller_key.connect_key_pressed(move |_, keyval, _, _| handler(keyval));
+}
 
-    let window_clone = window.clone();
-    event_controller_key.connect_key_pressed(move |_, keyval, _, _| {
-        use gdk::Key;
-        match keyval {
-            Key::Escape => {
-                window_clone.close();
-                glib::Propagation::Stop
-            }
-            _ => glib::Propagation::Proceed,
+pub fn connect_window_key_press_events(
+    widget: Rc<impl WidgetExt>,
+    event_controller_key: gtk::EventControllerKey,
+    window: Rc<impl GtkWindowExt>,
+) {
+    connect_key_press_events(widget, event_controller_key, move |keyval| match keyval {
+        Key::Escape => {
+            window.close();
+            glib::Propagation::Stop
         }
+        _ => glib::Propagation::Proceed,
     });
 }
 
@@ -112,14 +113,12 @@ pub fn connect_entry_key_press_events(
     event_controller_key: gtk::EventControllerKey,
     window: Rc<impl GtkWindowExt>,
 ) {
-    widget.add_controller(event_controller_key.clone());
-
-    let window_clone = window.clone();
-    event_controller_key.connect_key_pressed(move |_, keyval, _, _| {
-        use gdk::Key;
-        match keyval {
+    connect_key_press_events(
+        widget.clone(),
+        event_controller_key,
+        move |keyval| match keyval {
             Key::Escape => {
-                window_clone.close();
+                window.close();
                 glib::Propagation::Stop
             }
             Key::Down | Key::Up => {
@@ -128,12 +127,11 @@ pub fn connect_entry_key_press_events(
                 } else {
                     gtk::DirectionType::TabBackward
                 });
-
                 glib::Propagation::Proceed
             }
             _ => glib::Propagation::Proceed,
-        }
-    });
+        },
+    );
 }
 
 pub fn handle_selection_activation<F>(
@@ -144,19 +142,19 @@ pub fn handle_selection_activation<F>(
 ) where
     F: FnMut(bool),
 {
-    let match_row = runtime_data
+    let gmatch = runtime_data
         .borrow()
         .list_store
         .item(row_id.try_into().unwrap())
         .unwrap_or_else(|| panic!("Failed to get list_store item at {} position", row_id))
-        .downcast::<MatchRow>()
+        .downcast::<GMatch>()
         .expect("Failed to downcast Object to MatchRow");
 
-    let rmatch: Match = match_row.clone().into();
+    let rmatch: Match = gmatch.clone().into();
     let plugin = *runtime_data
         .borrow()
         .plugins
-        .get(match_row.get_plugin_id() as usize)
+        .get(gmatch.get_plugin_id() as usize)
         .expect("Can't get plugin");
 
     match plugin.handle_selection()(rmatch) {
@@ -175,7 +173,7 @@ pub fn handle_selection_activation<F>(
             }
             window.close();
         }
-    };
+    }
 }
 
 pub fn configure_main_window(
@@ -218,7 +216,7 @@ pub fn configure_main_window(
         );
     }
 
-    // TODO window needs to be resized on `refresh_matches` if it fits `max_content_height`
+    // TODO: window needs to be resized on `refresh_matches` if it fits `max_content_height`
     let scroll_window = gtk::ScrolledWindow::builder()
         // .min_content_width(200)
         .min_content_height(120)

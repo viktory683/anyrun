@@ -47,7 +47,7 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
     let geometry = monitor.geometry();
 
     let list_store = gio::ListStore::builder()
-        .item_type(MatchRow::static_type())
+        .item_type(GMatch::static_type())
         .build();
 
     let plugins = config
@@ -111,25 +111,23 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
             .name(style_names::MAIN)
             .build(),
     );
+
+    let list_store = runtime_data.clone().borrow().list_store.clone();
+
     let runtime_data_clone = runtime_data.clone();
-    main_list.bind_model(
-        Some(&runtime_data.clone().borrow().list_store),
-        move |match_row| {
-            let match_row = match_row
-                .clone()
-                .downcast::<MatchRow>()
-                .expect("Can't downcast glib::Object ot MatchRow");
+    main_list.bind_model(Some(&list_store), move |match_row| {
+        let gmatch = match_row
+            .clone()
+            .downcast::<GMatch>()
+            .expect("Can't downcast glib::Object to GMatch");
 
-            create_widget_func(runtime_data_clone.clone(), match_row)
-        },
-    );
+        build_match_box(runtime_data_clone.clone(), gmatch)
+    });
 
-    let plugins = runtime_data.clone().borrow().plugins.clone();
-
-    let window = Rc::new(setup_main_window(app, runtime_data.clone()));
-
-    let window_eck = gtk::EventControllerKey::new();
-    connect_window_key_press_events(window.clone(), window_eck);
+    let main_list_clone = main_list.clone();
+    list_store.connect_items_changed(move |_, _, _, _| {
+        main_list_clone.select_row(main_list_clone.row_at_index(0).as_ref());
+    });
 
     let entry = Rc::new(
         gtk::SearchEntry::builder()
@@ -138,8 +136,15 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
             .build(),
     );
 
+    let window = Rc::new(setup_main_window(app, runtime_data.clone()));
+
     let entry_eck = gtk::EventControllerKey::new();
     connect_entry_key_press_events(entry.clone(), entry_eck, window.clone());
+
+    let window_eck = gtk::EventControllerKey::new();
+    connect_window_key_press_events(window.clone(), window_eck, window.clone());
+
+    let plugins = runtime_data.clone().borrow().plugins.clone();
 
     setup_entry_changed(entry.clone(), runtime_data.clone(), plugins.clone());
     setup_entry_activated(
