@@ -1,5 +1,6 @@
 mod config;
 mod plugins;
+mod types;
 mod ui;
 
 use std::{cell::RefCell, rc::Rc};
@@ -10,8 +11,9 @@ use gtk::{gdk, gio, glib, prelude::*};
 use log::*;
 use nix::unistd;
 
-use config::{determine_config_dir, load_config, style_names, Args, PostRunAction, RuntimeData};
-use plugins::{load_plugin, refresh_matches};
+use config::*;
+use plugins::*;
+use types::*;
 use ui::*;
 use wl_clipboard_rs::copy;
 
@@ -44,6 +46,16 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
         .expect("Can't downcast Object to Monitor");
     let geometry = monitor.geometry();
 
+    let list_store = gio::ListStore::builder()
+        .item_type(GMatch::static_type())
+        .build();
+
+    let plugins = config
+        .plugins
+        .iter()
+        .map(|filename| load_plugin(filename, &config_dir))
+        .collect();
+
     let runtime_data = Rc::new(RefCell::new(RuntimeData {
         exclusive: None,
         post_run_action: PostRunAction::None,
@@ -51,6 +63,8 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
         error_label,
         config_dir,
         geometry,
+        list_store,
+        plugins,
     }));
 
     let runtime_data_clone = runtime_data.clone();
@@ -98,18 +112,22 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
             .build(),
     );
 
-    let plugins: Vec<_> = runtime_data
-        .borrow()
-        .config
-        .plugins
-        .iter()
-        .map(|filename| load_plugin(filename, runtime_data.clone()))
-        .collect();
+    let list_store = runtime_data.clone().borrow().list_store.clone();
 
-    let window = Rc::new(setup_main_window(app, runtime_data.clone()));
+    let runtime_data_clone = runtime_data.clone();
+    main_list.bind_model(Some(&list_store), move |match_row| {
+        let gmatch = match_row
+            .clone()
+            .downcast::<GMatch>()
+            .expect("Can't downcast glib::Object to GMatch");
 
-    let window_eck = gtk::EventControllerKey::new();
-    connect_window_key_press_events(window.clone(), window_eck);
+        build_match_box(runtime_data_clone.clone(), gmatch)
+    });
+
+    let main_list_clone = main_list.clone();
+    list_store.connect_items_changed(move |_, _, _, _| {
+        main_list_clone.select_row(main_list_clone.row_at_index(0).as_ref());
+    });
 
     let entry = Rc::new(
         gtk::SearchEntry::builder()
@@ -118,15 +136,17 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
             .build(),
     );
 
+    let window = Rc::new(setup_main_window(app, runtime_data.clone()));
+
     let entry_eck = gtk::EventControllerKey::new();
     connect_entry_key_press_events(entry.clone(), entry_eck, window.clone());
 
-    setup_entry_changed(
-        entry.clone(),
-        runtime_data.clone(),
-        plugins.clone(),
-        main_list.clone(),
-    );
+    let window_eck = gtk::EventControllerKey::new();
+    connect_window_key_press_events(window.clone(), window_eck, window.clone());
+
+    let plugins = runtime_data.clone().borrow().plugins.clone();
+
+    setup_entry_changed(entry.clone(), runtime_data.clone(), plugins.clone());
     setup_entry_activated(
         entry.clone(),
         main_list.clone(),
@@ -144,7 +164,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
     );
 
     if runtime_data.borrow().config.show_results_immediately {
-        refresh_matches("", &plugins, main_list.clone(), runtime_data.clone());
+        refresh_matches("", &plugins, runtime_data.clone());
     }
 
     configure_main_window(
@@ -161,11 +181,10 @@ fn setup_entry_changed(
     entry: Rc<gtk::SearchEntry>,
     runtime_data: Rc<RefCell<RuntimeData>>,
     plugins: Vec<Plugin>,
-    main_list: Rc<gtk::ListBox>,
 ) {
     entry.connect_changed(move |e| {
         runtime_data.borrow_mut().exclusive = None;
-        refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone());
+        refresh_matches(&e.text(), &plugins, runtime_data.clone());
     });
 }
 
@@ -178,9 +197,12 @@ fn setup_entry_activated(
 ) {
     entry.connect_activate(move |e| {
         if let Some(row) = main_list.selected_row() {
-            handle_selection_activation(row.clone(), window.clone(), runtime_data.clone(), |_| {
-                refresh_matches(&e.text(), &plugins, main_list.clone(), runtime_data.clone())
-            })
+            handle_selection_activation(
+                row.index().try_into().unwrap(),
+                window.clone(),
+                runtime_data.clone(),
+                |_| refresh_matches(&e.text(), &plugins, runtime_data.clone()),
+            )
         }
     });
 }
@@ -192,15 +214,12 @@ fn setup_row_activated(
     entry: Rc<gtk::SearchEntry>,
     plugins: Vec<Plugin>,
 ) {
-    let main_list_clone = main_list.clone();
     main_list.connect_row_activated(move |_, row| {
-        handle_selection_activation(row.clone(), window.clone(), runtime_data.clone(), |_| {
-            refresh_matches(
-                &entry.text(),
-                &plugins,
-                main_list_clone.clone(),
-                runtime_data.clone(),
-            )
-        })
+        handle_selection_activation(
+            row.index().try_into().unwrap(),
+            window.clone(),
+            runtime_data.clone(),
+            |_| refresh_matches(&entry.text(), &plugins, runtime_data.clone()),
+        )
     });
 }
