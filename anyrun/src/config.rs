@@ -37,6 +37,8 @@ pub struct Config {
     pub show_results_immediately: bool,
     #[serde(default)]
     pub layer: Layer,
+    #[serde(default)]
+    pub bottom_entry: bool,
 }
 
 impl Config {
@@ -77,6 +79,7 @@ impl Default for Config {
             steal_focus: false,
             show_results_immediately: false,
             layer: Layer::default(),
+            bottom_entry: false,
         }
     }
 }

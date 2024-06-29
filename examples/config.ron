@@ -48,6 +48,9 @@ Config(
     // Show search results immediately when Anyrun starts
     show_results_immediately: false,
 
+    // Place entry to the bottom
+    bottom_entry: false,
+
     // List of plugins to be loaded by default, can be specified with a relative path to be loaded from the
     // `<anyrun config dir>/plugins` directory or with an absolute path to just load the file the path points to.
     plugins: [

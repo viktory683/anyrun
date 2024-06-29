@@ -202,8 +202,6 @@ pub fn configure_main_window(
         .name(style_names::MAIN)
         .build();
 
-    main_vbox.append(&*entry);
-
     if !runtime_data.error_label.is_empty() {
         main_vbox.append(
             &gtk::Label::builder()
@@ -223,7 +221,15 @@ pub fn configure_main_window(
         .build();
 
     scroll_window.set_child(Some(&*main_list));
-    main_vbox.append(&scroll_window);
+
+    if runtime_data.config.bottom_entry {
+        main_vbox.append(&scroll_window);
+        main_vbox.append(&*entry);
+    } else {
+        main_vbox.append(&*entry);
+        main_vbox.append(&scroll_window);
+    }
+
     window.set_child(Some(&main_vbox));
     entry.grab_focus();
 }
