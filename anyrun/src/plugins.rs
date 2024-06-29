@@ -36,7 +36,7 @@ pub fn build_image(icon: &str) -> gtk::Image {
 
     match_image = if path.is_absolute() {
         match_image.file(path.to_string_lossy())
-        } else {
+    } else {
         match_image.icon_name(icon)
     };
     match_image.build()

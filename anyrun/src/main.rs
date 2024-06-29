@@ -124,17 +124,26 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         build_match_box(runtime_data_clone.clone(), gmatch)
     });
 
-    let main_list_clone = main_list.clone();
-    list_store.connect_items_changed(move |_, _, _, _| {
-        main_list_clone.select_row(main_list_clone.row_at_index(0).as_ref());
-    });
-
     let entry = Rc::new(
         gtk::SearchEntry::builder()
             .hexpand(true)
             .name(style_names::ENTRY)
+            .height_request(32)
             .build(),
     );
+
+    let runtime_data_clone = runtime_data.clone();
+    let main_list_clone = main_list.clone();
+    let entry_clone = entry.clone();
+    list_store.connect_items_changed(move |_, _, _, _| {
+        main_list_clone.select_row(main_list_clone.row_at_index(0).as_ref());
+
+        resize_window(
+            runtime_data_clone.clone(),
+            main_list_clone.clone(),
+            entry_clone.height_request(),
+        );
+    });
 
     let window = Rc::new(setup_main_window(app, runtime_data.clone()));
 
