@@ -19,6 +19,14 @@ else
     config_dir="/etc/xdg/anyrun"
 fi
 
+if [[ -n "$XDG_DATA_HOME" ]]; then
+    user_data_dir="${XDG_DATA_HOME}"
+else
+    user_data_dir="${HOME}/.local/share"
+fi
+
+glib_schemas_dir="${user_data_dir}/glib-2.0/schemas"
+
 # Clone the repository
 # git clone --recursive https://github.com/bzglve/anyrun.git || { echo "Failed to clone repository"; exit 1; }
 # cd anyrun || { echo "Failed to change directory"; exit 1; }
@@ -28,6 +36,10 @@ cargo build --release || { echo "Cargo build failed"; exit 1; }
 
 # Install the anyrun binary
 cargo install --path anyrun/ || { echo "Cargo install failed"; exit 1; }
+
+mkdir -p $glib_schemas_dir
+cp settings/1/* $glib_schemas_dir
+glib-compile-schemas $glib_schemas_dir
 
 # Create the config directory and the plugins subdirectory
 sudo mkdir -p "${config_dir}/plugins" || { echo "Failed to create config directory"; exit 1; }

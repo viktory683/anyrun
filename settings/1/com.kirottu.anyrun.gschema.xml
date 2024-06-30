@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<schemalist>
+  <schema id="com.kirottu.anyrun" path="/com/kirottu/anyrun/">
+    <key name="entry-state" type="s">
+      <default>""</default>
+      <summary>Text entry state</summary>
+    </key>
+  </schema>
+</schemalist>

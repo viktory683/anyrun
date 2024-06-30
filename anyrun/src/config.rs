@@ -38,6 +38,10 @@ pub struct Config {
     pub ignore_exclusive_zones: bool,
     #[serde(default)]
     pub show_results_immediately: bool,
+
+    #[serde(default)]
+    pub save_entry_state: bool,
+
     #[serde(default)]
     pub layer: Layer,
     #[serde(default)]
@@ -83,6 +87,7 @@ impl Default for Config {
             show_results_immediately: false,
             layer: Layer::default(),
             bottom_entry: false,
+            save_entry_state: false,
         }
     }
 }
@@ -199,6 +204,7 @@ pub struct RuntimeData {
     pub config_dir: PathBuf,
     pub geometry: Rectangle,
     pub list_store: gio::ListStore,
+    pub app_state: gio::Settings,
 }
 
 /// The naming scheme for CSS styling
@@ -213,6 +219,8 @@ pub mod style_names {
     pub const MATCH_TITLE: &str = "match-title";
     pub const MATCH_DESC: &str = "match-desc";
 }
+
+pub const APP_ID: &str = "com.kirottu.anyrun";
 
 pub fn default_config_dir() -> PathBuf {
     let dirs = glib::system_config_dirs();

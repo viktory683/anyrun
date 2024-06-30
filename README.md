@@ -72,14 +72,17 @@ See [Nix.md](docs/Nix.md)
 ### Manual installation
 
 1. Make sure all of the [dependencies](#dependencies) are installed
+
 2. Clone the repo
     ```bash
     git clone --recursive https://github.com/bzglve/anyrun.git
     ```
+
 3. Change dir
     ```bash
     cd anyrun
     ```
+
 4. Run [install.sh](install.sh) or the following commands in order:
     ```bash
     cargo build --release # Build all the packages
@@ -87,6 +90,13 @@ See [Nix.md](docs/Nix.md)
     sudo mkdir -p /etc/xdg/anyrun/plugins # Create the config directory and the plugins subdirectory
     sudo cp target/release/*.so /etc/xdg/anyrun/plugins # Copy all of the built plugins to the correct directory
     sudo cp examples/config.ron /etc/xdg/anyrun/config.ron # Copy the default config file
+    ```
+
+5. For saving app state used glib schemas so you need to copy defined schemas to glib schemas folder and compile them
+    ```bash
+    mkdir -p ~/.local/share/glib-2.0/schemas
+    cp settings/1/* ~/.local/share/glib-2.0/schemas
+    glib-compile-schemas ~/.local/share/glib-2.0/schemas
     ```
 
 > [!NOTE]
@@ -234,7 +244,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
     - [x] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
 - [ ] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
-  - [ ] Config option to save previous search on close and have it on open
+  - [x] Config option to save previous search on close and have it on open
   - [ ] Handle properly exclusive plugin
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
   - [ ] `?` should return some common help or default usage for plugin

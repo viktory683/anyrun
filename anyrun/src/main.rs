@@ -25,12 +25,14 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
     env_logger::init();
     gtk::init().expect("Failed to initialize GTK.");
 
-    let app = gtk::Application::new(Some("com.kirottu.anyrun"), Default::default());
+    let app = gtk::Application::new(Some(APP_ID), Default::default());
     app.register(gio::Cancellable::NONE)?;
 
     if app.is_remote() {
         return Ok(glib::ExitCode::SUCCESS);
     }
+
+    let app_state = gio::Settings::new(APP_ID);
 
     let args = Args::parse();
     let config_dir = determine_config_dir(&args.config_dir);
@@ -69,6 +71,7 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
         geometry,
         list_store,
         plugins,
+        app_state,
     }));
 
     app.connect_activate(
@@ -132,6 +135,8 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         }),
     );
 
+    let app_state = runtime_data.borrow().app_state.clone();
+
     let entry = Rc::new(
         gtk::SearchEntry::builder()
             .hexpand(true)
@@ -139,6 +144,10 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
             .height_request(32)
             .build(),
     );
+    if runtime_data.borrow().config.save_entry_state {
+        entry.set_text(&app_state.string("entry-state"));
+        app_state.bind("entry-state", &*entry, "text").build();
+    }
 
     list_store.connect_items_changed(
         clone!(@weak entry, @weak main_list, @weak runtime_data => move |_, _, _, _| {
@@ -180,7 +189,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
     );
 
     if runtime_data.borrow().config.show_results_immediately {
-        refresh_matches("", &plugins, runtime_data.clone());
+        refresh_matches(&entry.text(), &plugins, runtime_data.clone());
     }
 
     configure_main_window(

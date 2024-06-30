@@ -48,6 +48,9 @@ Config(
     // Show search results immediately when Anyrun starts
     show_results_immediately: false,
 
+    // Save entred text on close and have it on open
+    save_entry_state: false,
+
     // Place entry to the bottom
     bottom_entry: false,
 
