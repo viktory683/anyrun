@@ -234,7 +234,7 @@ See [Plugin_development.md](docs/Plugin_development.md)
   - [ ] If anyrun launched in something like sigle-plugin mode then plugin can request to hide entry or something else... Maybe it can request changing window placement, or specify custom in it's own config (for power-menu or whatever)
 - [x] Migrate to gtk4 due to [Support for gtk3-rs crates was dropped](https://gtk-rs.org/blog/2024/06/01/new-release.html)
   - [x] `Down` and `Up` keys should focus from entry to the list and back
-  - [x] click to close (seems it will not work [comments](#todo-comments))
+  - [x] click to close (seems it will not work [comments](#click-to-close))
   - [x] Scroll window instead of using `max_entries` or plugin `max_entries` (now config field was removed (p.s. I can't do this do to laziness))
     - [x] Get rid of full screen window
       - [x] Anchors from config
@@ -243,9 +243,9 @@ See [Plugin_development.md](docs/Plugin_development.md)
       - [x] Option to place entry down if window is anchored to the bottom
     - [x] Dynamic window size on mathces update wrapping all in scroll if it's too big
   - [ ] Completion for entry
-- [ ] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
+- [x] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
   - [x] Config option to save previous search on close and have it on open
-  - [ ] Handle properly exclusive plugin
+  - [x] Handle properly exclusive plugin (seems it will not work [comments](#exclusive-plugin-state))
 - [ ] help matches (maybe based on `#[info]` macro or adding some special `#[help]` macto)
   - [ ] `?` should return some common help or default usage for plugin
   - [ ] `? <plugin>` should return some plugin usage (maybe based on it's config)
@@ -255,4 +255,14 @@ See [Plugin_development.md](docs/Plugin_development.md)
 
 ### TODO-comments
 
-- click on close outside window seems to be impossible with wayland if not to fake by creating transparent fullscreen window. Hope it will be some kind reworked in future releases of Wayland+GTK. I hope I'm wrong about this and just couldn't find the correct information. (help is welcome)
+#### Click to close
+click on close outside window seems to be impossible with wayland if not to fake by creating transparent fullscreen window.
+
+Hope it will be some kind reworked in future releases of Wayland+GTK
+
+I hope I'm wrong about this and just couldn't find the correct information. (help is welcome)
+
+#### Exclusive plugin state
+Plugin grabbing exclusivity can implement menu differently from state to state (wm windows or calling some api for example)
+
+So saving exclusive plugin state can be some king of unstable
