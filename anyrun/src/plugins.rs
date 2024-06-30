@@ -6,7 +6,11 @@ use log::*;
 
 use crate::{config::*, types::GMatch};
 
-use gtk::{gio, glib, prelude::*};
+use gtk::{
+    gio,
+    glib::{self, clone},
+    prelude::*,
+};
 
 pub fn build_label(name: &str, use_markup: bool, label: &str, sensitive: bool) -> gtk::Label {
     gtk::Label::builder()
@@ -192,19 +196,19 @@ pub fn refresh_matches(input: &str, plugins: &[Plugin], runtime_data: Rc<RefCell
 
     for (plugin_id, plugin) in plugins_to_use.iter().enumerate() {
         let id = plugin.get_matches()(input.into());
-        let plugin_clone = *plugin;
 
-        let list_store_clone = list_store.clone();
-
-        glib::timeout_add_local(Duration::from_millis(1), move || {
-            async_match(&plugin_clone, id, |matches| {
-                handle_matches(
-                    exclusive_plugin_id.unwrap_or(plugin_id) as u64,
-                    matches,
-                    list_store_clone.clone(),
-                )
-            })
-        });
+        glib::timeout_add_local(
+            Duration::from_millis(1),
+            clone!(@strong list_store, @strong plugin => move || {
+                async_match(&plugin, id, |matches| {
+                    handle_matches(
+                        exclusive_plugin_id.unwrap_or(plugin_id) as u64,
+                        matches,
+                        list_store.clone(),
+                    )
+                })
+            }),
+        );
     }
 }
 

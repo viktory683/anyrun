@@ -7,7 +7,11 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyrun_interface::PluginRef as Plugin;
 use clap::Parser;
-use gtk::{gdk, gio, glib, prelude::*};
+use gtk::{
+    gdk, gio,
+    glib::{self, clone},
+    prelude::*,
+};
 use log::*;
 use nix::unistd;
 
@@ -67,8 +71,9 @@ fn main() -> Result<glib::ExitCode, glib::Error> {
         plugins,
     }));
 
-    let runtime_data_clone = runtime_data.clone();
-    app.connect_activate(move |app| activate(app, runtime_data_clone.clone()));
+    app.connect_activate(
+        clone!(@weak runtime_data => move |app| activate(app, runtime_data.clone())),
+    );
     let exit_code = app.run_with_args::<String>(&[]);
 
     handle_post_run_action(runtime_data);
@@ -114,15 +119,18 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
 
     let list_store = runtime_data.clone().borrow().list_store.clone();
 
-    let runtime_data_clone = runtime_data.clone();
-    main_list.bind_model(Some(&list_store), move |match_row| {
-        let gmatch = match_row
-            .clone()
-            .downcast::<GMatch>()
-            .expect("Can't downcast glib::Object to GMatch");
-
-        build_match_box(runtime_data_clone.clone(), gmatch)
-    });
+    main_list.bind_model(
+        Some(&list_store),
+        clone!(@strong runtime_data => move |match_row| {
+            build_match_box(
+                runtime_data.clone(),
+                match_row
+                    .clone()
+                    .downcast::<GMatch>()
+                    .expect("Can't downcast glib::Object to GMatch"),
+            )
+        }),
+    );
 
     let entry = Rc::new(
         gtk::SearchEntry::builder()
@@ -132,18 +140,17 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
             .build(),
     );
 
-    let runtime_data_clone = runtime_data.clone();
-    let main_list_clone = main_list.clone();
-    let entry_clone = entry.clone();
-    list_store.connect_items_changed(move |_, _, _, _| {
-        main_list_clone.select_row(main_list_clone.row_at_index(0).as_ref());
+    list_store.connect_items_changed(
+        clone!(@weak entry, @weak main_list, @weak runtime_data => move |_, _, _, _| {
+            main_list.select_row(main_list.row_at_index(0).as_ref());
 
-        resize_window(
-            runtime_data_clone.clone(),
-            main_list_clone.clone(),
-            entry_clone.height_request(),
-        );
-    });
+            resize_window(
+                runtime_data.clone(),
+                main_list.clone(),
+                entry.height_request(),
+            );
+        }),
+    );
 
     let window = Rc::new(setup_main_window(app, runtime_data.clone()));
 
