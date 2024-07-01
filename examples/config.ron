@@ -6,7 +6,7 @@ Config(
     // The width of the runner
     width: Absolute(800),
 
-    // The minimum height of the runner, the runner will expand to fit all the entries
+    // The height of the runner
     height: Absolute(0),
 
     // Array of edges where to anchor window. Window will be stretched if two opposite edges specifyed
@@ -33,7 +33,7 @@ Config(
     layer: Top, 
 
     // Hide plugin info icons  
-    hide_plugins_icons: true, 
+    hide_plugins_icons: false, 
 
     // Hide match icons
     hide_match_icons: false,

@@ -31,8 +31,8 @@ I will be glad if you visit [issues](https://github.com/bzglve/anyrun/issues) an
 
 # Screenshots
 
-![screenshot](screenshots/screenshot.png)
-![screenshot](screenshots/with_icons.png)
+![screenshot](screenshots/adwaita-light.png)
+![screenshot](screenshots/adwaita-dark.png)
 
 # Usage
 
@@ -51,6 +51,7 @@ build & run it:
 - `glib2 (libgobject-2.0 libgio-2.0 libglib-2.0)`
 
 > [!NOTE]
+>
 > `gdk-pixbuf2 (libgdk_pixbuf-2.0)` maybe don't need
 
 ## Installation
@@ -159,13 +160,15 @@ use them.
 
 > [!NOTE]
 >
-> Currently with `ScrolledWindow` you can leave all styles empty/comment all out/remove file (will throw Gtk-WARNING but it's ok)/etc
+> Currently with `ScrolledWindow` you can leave all styles empty/comment all out/remove file/etc
 
 > [!WARNING]
 >
 > May be changes, not tested
 
-Anyrun supports [GTK+ CSS](https://docs.gtk.org/gtk4/css-overview.html) styling.
+By default is used default GTK theme (as it's GTK application, right?)
+
+But Anyrun supports [GTK+ CSS](https://docs.gtk.org/gtk4/css-overview.html) styling.
 The names for the different widgets and widgets associated with them are as
 follows:
 
@@ -241,8 +244,14 @@ See [Plugin_development.md](docs/Plugin_development.md)
       - [x] Margins from config (like there was `x` and `y` options)
         - [x] Use RealtiveNum instead
       - [x] Option to place entry down if window is anchored to the bottom
-    - [x] Dynamic window size on mathces update wrapping all in scroll if it's too big
+    - [x] Dynamic window size on mathces update wrapping all in scroll if it's too big (abolished to be KISS)
   - [ ] Completion for entry
+  - [x] Design
+    - [ ] Need to do something with text overflow.
+      - Autoscroll on hover/selection
+      - horizontal window scroll (NO)
+      - Do something like `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed accumsan elit id...`
+    - [ ] libadwaita? (please share you opinion about it in [discussions](https://github.com/bzglve/anyrun/discussions) until I made it)
 - [x] Up key on open should insert previous search (If we use Up/Down keys for focus, then it can only save previous state)
   - [x] Config option to save previous search on close and have it on open
   - [x] Handle properly exclusive plugin (seems it will not work [comments](#exclusive-plugin-state))
