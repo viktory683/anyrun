@@ -251,7 +251,11 @@ See [Plugin_development.md](docs/Plugin_development.md)
   - [ ] `? <plugin>` should return some plugin usage (maybe based on it's config)
 - [x] Select first match by default as it is has default activate
 - [ ] Add something like daemon mode to make launch faster. Instead of loading all libs and stuff every time we need just open/hide window using daemon
-- [ ] `ci: Security audit` fails up because of `generational-arena` crate as it's unmaintaned. Need to move to something more alive
+- [ ] CI/CD
+  - [ ] Security audit
+    - [ ] doesn't even get to the next step
+    - [ ] fails up because of `generational-arena` crate as it's unmaintaned. Need to move to something more alive
+  - [x] Nix check and build. Thanks a lot [@eum3l](https://github.com/eum3l)
 
 ### TODO-comments
 

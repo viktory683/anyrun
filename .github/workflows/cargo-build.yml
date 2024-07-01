@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-nix:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +27,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         name: Install rust toolchain
         with:
-          toolchain: nightly
+          toolchain: stable
           override: true
 
       - uses: Swatinem/rust-cache@v2
