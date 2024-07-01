@@ -10,80 +10,68 @@
     };
   };
 
-  outputs = {
-    self,
-    flake-parts,
-    nixpkgs,
-    systems,
-    ...
-  } @ inputs:
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      imports = [flake-parts.flakeModules.easyOverlay];
+  outputs =
+    {
+      self,
+      flake-parts,
+      systems,
+      ...
+    }@inputs:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [ flake-parts.flakeModules.easyOverlay ];
       systems = import systems;
 
-      perSystem = {
-        self',
-        config,
-        pkgs,
-        ...
-      }: let
-        inherit (pkgs) callPackage;
-      in rec {
-        # provide the formatter for nix fmt
-        formatter = pkgs.alejandra;
+      perSystem =
+        {
+          self',
+          config,
+          pkgs,
+          ...
+        }:
+        let
+          inherit (pkgs) callPackage;
+        in
+        rec {
+          formatter = pkgs.nixfmt-rfc-style;
 
-        devShells.default = pkgs.mkShell {
-          inputsFrom = builtins.attrValues self'.packages;
+          devShells.default = pkgs.mkShell {
+            inputsFrom = builtins.attrValues self'.packages;
 
-          packages = with pkgs; [
-            alejandra # nix formatter
-            rustfmt # rust formatter
-            statix # lints and suggestions
-            deadnix # clean up unused nix code
-            rustc # rust compiler
-            gcc
-            cargo # rust package manager
-            clippy # opinionated rust formatter
-          ];
-        };
-  
-        checks = packages;
-        packages = let
-          lockFile = ./Cargo.lock;
-          mkPlugin = name:
-            callPackage ./nix/plugins/default.nix {
-              inherit lockFile name;
-            };
-        in rec {
-          default = anyrun;
-          anyrun = callPackage ./nix/default.nix {inherit lockFile;};
-
-          anyrun-with-all-plugins = pkgs.callPackage ./nix/default.nix {
-            inherit lockFile;
-            dontBuildPlugins = false;
+            packages = with pkgs; [
+              rustfmt # rust formatter
+              statix # lints and suggestions
+              deadnix # clean up unused nix code
+              rustc # rust compiler
+              cargo # rust package manager
+              clippy # opinionated rust formatter
+            ];
           };
 
-          applications = mkPlugin "applications";
-          dictionary = mkPlugin "dictionary";
-          kidex = mkPlugin "kidex";
-          randr = mkPlugin "randr";
-          rink = mkPlugin "rink";
-          shell = mkPlugin "shell";
-          stdin = mkPlugin "stdin";
-          symbols = mkPlugin "symbols";
-          translate = mkPlugin "translate";
-          websearch = mkPlugin "websearch";
+          checks = packages;
+          packages =
+            let
+              cargoLock.lockFile = ./Cargo.lock;
+              plugins = builtins.attrNames (builtins.readDir ./plugins);
+            in
+            rec {
+              default = anyrun;
+              anyrun = callPackage ./nix/default.nix { inherit cargoLock; };
+              anyrun-with-all-plugins = callPackage ./nix/default.nix { inherit cargoLock plugins; };
+            }
+            // builtins.listToAttrs (
+              builtins.map (name: {
+                inherit name;
+                value = callPackage ./nix/plugin.nix { inherit name cargoLock; };
+              }) plugins
+            );
+
+          # Set up an overlay from packages exposed by this flake
+          overlayAttrs = config.packages;
         };
 
-        # Set up an overlay from packages exposed by this flake
-        overlayAttrs = config.packages;
-      };
-
-      flake = {
-        homeManagerModules = rec {
-          default = anyrun;
-          anyrun = import ./nix/hm-module.nix self;
-        };
+      flake.homeManagerModules = rec {
+        default = anyrun;
+        anyrun = import ./nix/hm-module.nix self;
       };
     };
 }

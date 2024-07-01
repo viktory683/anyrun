@@ -1,8 +1,7 @@
 {
   lib,
   makeWrapper,
-  lockFile,
-  # Dependencies for Anyrun
+  cargoLock,
   glib,
   gtk4,
   gtk4-layer-shell,
@@ -13,69 +12,63 @@
   rustfmt,
   cargo,
   rustc,
-  # Additional configuration arguments for the
-  # derivation. By default, we should not build
-  # any of the plugins.
-  dontBuildPlugins ? true,
+  wrapGAppsHook4,
+  plugins ? [ ],
   ...
-}: let
-  inherit (builtins) fromTOML readFile;
-  cargoToml = fromTOML (readFile ../anyrun/Cargo.toml);
+}:
+let
+  cargoToml = builtins.fromTOML (builtins.readFile ../anyrun/Cargo.toml);
   pname = cargoToml.package.name;
   version = cargoToml.package.version;
 in
-  rustPlatform.buildRustPackage {
-    inherit pname version;
-    src = ../.;
+rustPlatform.buildRustPackage {
+  inherit pname version cargoLock;
+  src = ../.;
 
-    buildInputs = [
-      glib
-      atk
-      librsvg
-      gtk4
-      gtk4-layer-shell
-    ];
+  copyLibs = true;
+  CARGO_INCREMENTAL = 0;
+  cargoBuildFlags = [ "-p ${pname}" ] ++ builtins.map (plugin: "-p ${plugin}") plugins;
+  buildAndTestSubdir = lib.optionalString ((builtins.length plugins) == 0) pname;
 
-    cargoLock = {
-      inherit lockFile;
-    };
+  buildInputs = [
+    glib
+    atk
+    librsvg
+    gtk4
+    gtk4-layer-shell
+  ];
 
-    checkInputs = [
-      cargo
-      rustc
-    ];
+  checkInputs = [
+    cargo
+    rustc
+  ];
 
-    nativeBuildInputs = [
-      pkg-config
-      makeWrapper
-      rustfmt
-      rustc
-      cargo
-    ];
+  nativeBuildInputs = [
+    pkg-config
+    makeWrapper
+    rustfmt
+    rustc
+    cargo
+    wrapGAppsHook4
+  ];
 
-    cargoBuildFlags =
-      if dontBuildPlugins
-      then ["-p ${pname}"]
-      else [];
+  postInstall = ''
+    glib_dir=$out/share/glib-2.0/schemas
+    mkdir -p $glib_dir
+    cp settings/1/* $glib_dir
+    glib-compile-schemas $glib_dir
+  '';
 
-    doCheck = true;
-    CARGO_BUILD_INCREMENTAL = "false";
-    RUST_BACKTRACE = "full";
-    copyLibs = true;
-    buildAndTestSubdir =
-      if dontBuildPlugins
-      then pname
-      else null;
+  preFixup = ''
+    gappsWrapperArgs+=(
+      --set GDK_PIXBUF_MODULE_FILE "$(echo ${librsvg.out}/lib/gdk-pixbuf-2.0/*/loaders.cache)" 
+      --prefix ANYRUN_PLUGINS : "$out/lib" 
+    )
+  '';
 
-    postInstall = ''
-      wrapProgram $out/bin/anyrun \
-        --set GDK_PIXBUF_MODULE_FILE "$(echo ${librsvg.out}/lib/gdk-pixbuf-2.0/*/loaders.cache)" \
-        --prefix ANYRUN_PLUGINS : $out/lib
-    '';
-
-    meta = {
-      description = "A wayland native, highly customizable runner.";
-      homepage = "https://github.com/bzglve/anyrun";
-      license = with lib.licenses; [gpl3];
-    };
-  }
+  meta = {
+    description = "A wayland native, highly customizable runner.";
+    homepage = "https://github.com/bzglve/anyrun";
+    license = [ lib.licenses.gpl3 ];
+  };
+}
