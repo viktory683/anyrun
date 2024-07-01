@@ -187,19 +187,25 @@ pub fn configure_main_window(
     let width = runtime_data
         .config
         .width
-        .to_val(window.width().try_into().unwrap());
+        .to_val(runtime_data.geometry.width().try_into().unwrap());
     let height = runtime_data
         .config
         .height
-        .to_val(window.height().try_into().unwrap());
+        .to_val(runtime_data.geometry.height().try_into().unwrap());
+
+    window.set_width_request(width);
+    window.set_height_request(height);
 
     let main_vbox = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
-        .halign(gtk::Align::Center)
-        .vexpand(false)
-        .width_request(width)
-        .height_request(height)
+        .halign(gtk::Align::Fill)
+        .valign(gtk::Align::Fill)
         .name(style_names::MAIN)
+        .margin_start(12)
+        .margin_end(12)
+        .margin_top(12)
+        .margin_bottom(12)
+        .spacing(12)
         .build();
 
     if !runtime_data.error_label.is_empty() {
@@ -232,31 +238,4 @@ pub fn configure_main_window(
 
     window.set_child(Some(&main_vbox));
     entry.grab_focus();
-}
-
-pub fn resize_window(
-    runtime_data: Rc<RefCell<RuntimeData>>,
-    widget: Rc<impl WidgetExt>,
-    entry_height: i32,
-) {
-    fn get_window(widget: Rc<impl WidgetExt>) -> Option<gtk::Window> {
-        let parent = widget.parent();
-        if let Some(parent) = parent {
-            let window = parent.clone().downcast::<gtk::Window>();
-            if let Ok(w) = window {
-                return Some(w);
-            }
-            return get_window(Rc::new(parent));
-        }
-        None
-    }
-
-    if let Some(window) = get_window(widget.clone()) {
-        let natural_size = widget.preferred_size().1;
-        let widget_height = natural_size.height() + entry_height;
-
-        let monitor_height = runtime_data.borrow().geometry.height();
-        // TODO move workaround to config to something like max_height or height_adjustment
-        window.set_default_height(widget_height.min(monitor_height - 100));
-    }
 }

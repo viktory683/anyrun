@@ -115,7 +115,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
 
     let main_list = Rc::new(
         gtk::ListBox::builder()
-            .selection_mode(gtk::SelectionMode::Single)
+            .selection_mode(gtk::SelectionMode::Browse)
             .name(style_names::MAIN)
             .build(),
     );
@@ -141,7 +141,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
         gtk::SearchEntry::builder()
             .hexpand(true)
             .name(style_names::ENTRY)
-            .height_request(32)
+            .placeholder_text("Search")
             .build(),
     );
     if runtime_data.borrow().config.save_entry_state {
@@ -151,13 +151,7 @@ fn activate(app: &impl IsA<gtk::Application>, runtime_data: Rc<RefCell<RuntimeDa
 
     list_store.connect_items_changed(
         clone!(@weak entry, @weak main_list, @weak runtime_data => move |_, _, _, _| {
-            main_list.select_row(main_list.row_at_index(0).as_ref());
-
-            resize_window(
-                runtime_data.clone(),
-                main_list.clone(),
-                entry.height_request(),
-            );
+            main_list.select_row(main_list.row_at_index(0).as_ref())
         }),
     );
 

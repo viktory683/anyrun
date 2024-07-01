@@ -12,7 +12,7 @@ use gtk::{
     prelude::*,
 };
 
-pub fn build_label(name: &str, use_markup: bool, label: &str, sensitive: bool) -> gtk::Label {
+pub fn build_label(name: &str, use_markup: bool, label: &str) -> gtk::Label {
     gtk::Label::builder()
         .name(name)
         .wrap(true)
@@ -22,16 +22,13 @@ pub fn build_label(name: &str, use_markup: bool, label: &str, sensitive: bool) -
         .valign(gtk::Align::Center)
         .vexpand(true)
         .label(label)
-        .sensitive(sensitive)
         .build()
 }
 
 pub fn build_image(icon: &str) -> gtk::Image {
     let mut match_image = gtk::Image::builder()
         .name(style_names::MATCH)
-        .pixel_size(32)
-        .halign(gtk::Align::Start)
-        .valign(gtk::Align::Start);
+        .pixel_size(32);
 
     let path = PathBuf::from(icon);
 
@@ -52,37 +49,43 @@ pub fn build_match_box(runtime_data: Rc<RefCell<RuntimeData>>, gmatch: GMatch) -
 
     let hbox = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
+        .height_request(36)
+        .spacing(4)
         .build();
 
-    if !runtime_data.config.hide_plugin_info {
-        let plugin_info_box = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .width_request(200)
-            .spacing(10)
-            .sensitive(false)
-            .build();
+    let plugin_info_box = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        // .halign(gtk::Align::Center)
+        .width_request(200)
+        .spacing(12)
+        .build();
 
-        let plugin_info = plugin.info()();
-        if !runtime_data.config.hide_plugins_icons && gmatch.get_first() {
-            plugin_info_box.append(&build_image(&plugin_info.icon));
-        }
+    let plugin_info = plugin.info()();
 
-        let plugin_label = gtk::Label::builder()
-            .halign(gtk::Align::End)
-            .label(if gmatch.get_first() {
-                &plugin_info.name
-            } else {
-                ""
-            })
-            .build();
+    let plugin_icon = build_image(&plugin_info.icon);
+    plugin_icon.set_margin_start(4);
+    plugin_icon.set_margin_end(8);
+    plugin_info_box.append(&plugin_icon);
 
-        plugin_info_box.append(&plugin_label);
-        hbox.append(&plugin_info_box);
-    }
+    plugin_icon.set_visible(!runtime_data.config.hide_plugins_icons && gmatch.get_first());
+
+    let plugin_label = gtk::Label::builder()
+        .label(if gmatch.get_first() {
+            &plugin_info.name
+        } else {
+            ""
+        })
+        .build();
+
+    plugin_info_box.append(&plugin_label);
+
+    plugin_info_box.set_visible(!runtime_data.config.hide_plugin_info);
+
+    hbox.append(&plugin_info_box);
 
     let match_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
-        .spacing(10)
+        .spacing(12)
         .build();
 
     if !runtime_data.config.hide_match_icons {
@@ -101,7 +104,6 @@ pub fn build_match_box(runtime_data: Rc<RefCell<RuntimeData>>, gmatch: GMatch) -
         style_names::MATCH_TITLE,
         gmatch.get_use_pango(),
         &gmatch.get_title(),
-        true,
     ));
 
     if let Some(desc) = gmatch.get_description() {
@@ -109,7 +111,6 @@ pub fn build_match_box(runtime_data: Rc<RefCell<RuntimeData>>, gmatch: GMatch) -
             style_names::MATCH_DESC,
             gmatch.get_use_pango(),
             &desc,
-            false,
         ));
     }
 
@@ -188,7 +189,7 @@ pub fn refresh_matches(input: &str, plugins: &[Plugin], runtime_data: Rc<RefCell
         exclusive_plugin_id = plugins
             .iter()
             .position(|p| p.info() == exclusive_plugin.info());
-        trace!("CUSTOM {:?}", exclusive_plugin_id);
+
         vec![*exclusive_plugin]
     } else {
         plugins.to_vec()
